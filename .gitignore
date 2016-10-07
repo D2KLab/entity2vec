@@ -87,3 +87,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+datasets/
+dictionaries/
+emb/old/
+graph/
+lib/Snap-3.0
