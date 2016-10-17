@@ -24,9 +24,15 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     AP = {}
 
+    queries_id_list = []
+
+    c = 0
+
     for i in gold_standard.values:
 
         query_wiki_id = int(i[2])
+
+    	queries_id_list.append(query_wiki_id) #to check when the query entity is changing
 
         candidate_wiki_id = int(i[4])
 
@@ -42,23 +48,29 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         candidate_scores[query_wiki_id].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
+        if c == 0:
 
-    for q in candidate_scores.keys():
+        	pass
 
-        sorted_candidate_scores[q] = sorted(candidate_scores[q], key = itemgetter(0), reverse = True)
+        else:
 
-        relevance = []
+	    	if queries_id_list[c - 1] != queries_id_list [c]: #new query entity, we can sort them and score
 
-        for score, rel in sorted_candidate_scores[q]:
+		        sorted_candidate_scores[query_wiki_id] = sorted(candidate_scores[query_wiki_id], key = itemgetter(0), reverse = True)
 
-            relevance.append(rel)
-        
-        
-        ndcg[q] = ndcg_at_k(relevance,N)
-        AP[q] = average_precision(relevance)
+		        relevance = []
 
-    print sorted_candidate_scores
+		        for score, rel in sorted_candidate_scores[query_wiki_id]:
 
+		            relevance.append(rel)
+		        
+		        ndcg[query_wiki_id] = ndcg_at_k(relevance,N)
+
+		        AP[query_wiki_id] = average_precision(relevance)
+
+		        print sorted_candidate_scores
+
+  		c += 1
 
     print np.mean(ndcg.values()), np.mean(AP.values())
 
