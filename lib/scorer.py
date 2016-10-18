@@ -7,7 +7,7 @@ from operator import itemgetter
 from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 import optparse
 from ranking import ndcg_at_k, average_precision 
-
+import time
 
 def scorer(embeddings, gold_standard,N, similarity):
 
@@ -26,13 +26,19 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     queries_id_list = []
 
+    doc_id_list = []
+
     c = 0
 
     for i in gold_standard.values:
 
+    	doc_id = int(i[0])
+
         query_wiki_id = int(i[2])
 
     	queries_id_list.append(query_wiki_id) #to check when the query entity is changing
+
+    	doc_id_list.append(doc_id_list) #check when the document is changing
 
         candidate_wiki_id = int(i[4])
 
@@ -46,7 +52,7 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         print query_e2v, candidate_e2v
 
-        candidate_scores[query_wiki_id].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
+        candidate_scores[(doc_id,query_wiki_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
         if c == 0:
 
@@ -54,23 +60,25 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         else:
 
-	    	if queries_id_list[c - 1] != queries_id_list [c]: #new query entity, we can sort them and score
+	    	if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
 
-		        sorted_candidate_scores[query_wiki_id] = sorted(candidate_scores[query_wiki_id], key = itemgetter(0), reverse = True)
+		        sorted_candidate_scores[(doc_id,query_wiki_id)] = sorted(candidate_scores[(doc_id,query_wiki_id)], key = itemgetter(0), reverse = True)
 
 		        relevance = []
 
-		        for score, rel in sorted_candidate_scores[query_wiki_id]:
+		        for score, rel in sorted_candidate_scores[(doc_id,query_wiki_id)]:
 
 		            relevance.append(rel)
 		        
-		        ndcg[query_wiki_id] = ndcg_at_k(relevance,N)
+		        ndcg[(doc_id,query_wiki_id)] = ndcg_at_k(relevance,N)
 
-		        AP[query_wiki_id] = average_precision(relevance)
+		        AP[(doc_id,query_wiki_id)] = average_precision(relevance)
 
-		        print sorted_candidate_scores
+		        #print sorted_candidate_scores
 
   		c += 1
+
+  	print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
 
     print np.mean(ndcg.values()), np.mean(AP.values())
 
@@ -154,7 +162,6 @@ def get_url_from_id(wiki_id):
 
 if __name__ == '__main__':
 
-
     parser = optparse.OptionParser()
     parser.add_option('-i','--input', dest = 'file_name', help = 'file_name')
     parser.add_option('-g','--gold', dest = 'gold_standard_name', help = 'gold_standard_name')
@@ -185,6 +192,12 @@ if __name__ == '__main__':
 
     count = 0
 
+    start_time = time.time()
+
     scorer(file_name, gold_standard_name,N, similarity)
 
-    print count
+    print 'number of entities not found is %d' %count
+
+    print 'elapsed time is:\n'
+
+    print("--- %s seconds ---" % (time.time() - start_time))
