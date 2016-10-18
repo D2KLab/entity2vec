@@ -44,11 +44,9 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         truth_value = int(i[5])
 
-        print query_wiki_id, candidate_wiki_id, truth_value
+        print doc_id,query_wiki_id, candidate_wiki_id, truth_value
 
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
-
-        print 0
 
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
 
@@ -56,25 +54,30 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         candidate_scores[(doc_id,query_wiki_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
-        try:
 
-			if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
+        if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
 
-				sorted_candidate_scores[(doc_id,query_wiki_id)] = sorted(candidate_scores[(doc_id,query_wiki_id)], key = itemgetter(0), reverse = True)
+			#get the doc_id and wiki_id of the previous iteration
 
-				relevance = []	
+			prev_doc_id = doc_id_list[c - 1]
 
-				for score, rel in sorted_candidate_scores[(doc_id,query_wiki_id)]:
-					relevance.append(rel)
+			prev_query_id = queries_id_list[c - 1]
+
+			sorted_candidate_scores[(prev_doc_id,prev_query_id)] = sorted(candidate_scores[(prev_doc_id,prev_query_id)], key = itemgetter(0), reverse = True)
+
+			relevance = []	
+
+			for score, rel in sorted_candidate_scores[(prev_doc_id,prev_query_id)]:
+				relevance.append(rel)
+
+			print relevance
 		        
-					ndcg[(doc_id,query_wiki_id)] = ndcg_at_k(relevance,N)
+			ndcg[(prev_doc_id,prev_query_id)] = ndcg_at_k(relevance,N)
 
-					AP[(doc_id,query_wiki_id)] = average_precision(relevance)
+			AP[(prev_doc_id,prev_query_id)] = average_precision(relevance)
 
-			     #print sorted_candidate_scores
+			print AP[(prev_doc_id,prev_query_id)]
 
-        except IndexError:
-			pass
 
         c = c + 1
 
