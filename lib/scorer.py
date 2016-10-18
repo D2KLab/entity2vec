@@ -25,17 +25,9 @@ def scorer(embeddings, gold_standard,N):
 
         truth_value = i[5]
 
-        #query_local_id = wiki_to_local(query_wiki_id)
-
-        #candidate_local_id = wiki_to_local(candidate_wiki_id)
-
         e2v_embeddings = get_e2v_embedding(embeddings)
 
-        #query_e2v = e2v_embeddings[e2v_embeddings[0] == query_local_id].values
-
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values
-
-        #candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_local_id].values
 
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
 

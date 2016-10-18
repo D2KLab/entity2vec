@@ -1,5 +1,7 @@
 import optparse
 
+#converts urls to wiki_id
+#deletes entities that do not have a wiki_id
 
 parser = optparse.OptionParser()
 parser.add_option('-i','--input', dest = 'input_file', help = 'input_file')
@@ -46,6 +48,8 @@ output_file_write = open(output_file,'w')
 
 #iterate through the page links and turn urls into wiki_ids
 
+count = 0
+
 with open(input_file) as page_links:
 
     for line in page_links:
@@ -58,11 +62,22 @@ with open(input_file) as page_links:
         url_1 = line[0]
         url_2 = line[2]
 
-        wiki_id1 = wiki_from_url_dict[url_1]
 
-        wiki_id2 = wiki_from_url_dict[url_2]
+        try:
 
-        output_file_write.write('%d %d' %(wiki_id1,wiki_id2))
+            wiki_id1 = wiki_from_url_dict[url_1]
 
+            wiki_id2 = wiki_from_url_dict[url_2]
+
+
+        except (KeyError, IndexError):
+
+            continue
+
+        output_file_write.write('%d %d\n' %(wiki_id1,wiki_id2))
+
+        print count
+
+        count += 1
 
 output_file_write.close()
