@@ -26,9 +26,7 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     queries_id_list = []
 
-
     doc_id_list = []
-
 
     c = 0
 
@@ -36,12 +34,11 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     	doc_id = int(i[0])
 
-
         query_wiki_id = int(i[2])
 
     	queries_id_list.append(query_wiki_id) #to check when the query entity is changing
 
-    	doc_id_list.append(doc_id_list) #check when the document is changing
+    	doc_id_list.append(doc_id) #check when the document is changing
 
         candidate_wiki_id = int(i[4])
 
@@ -83,7 +80,7 @@ def scorer(embeddings, gold_standard,N, similarity):
   		c += 1
 
   	print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
-
+	
     print np.mean(ndcg.values()), np.mean(AP.values())
 
 
