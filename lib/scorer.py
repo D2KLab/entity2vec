@@ -48,38 +48,37 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
 
+        print 0
+
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
 
-        print query_e2v, candidate_e2v
+        #print query_e2v, candidate_e2v
 
         candidate_scores[(doc_id,query_wiki_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
+        try:
 
-        if c == 0:
+			if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
 
-        	pass
+				sorted_candidate_scores[(doc_id,query_wiki_id)] = sorted(candidate_scores[(doc_id,query_wiki_id)], key = itemgetter(0), reverse = True)
 
-        else:
+				relevance = []	
 
-	    	if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
-
-		        sorted_candidate_scores[(doc_id,query_wiki_id)] = sorted(candidate_scores[(doc_id,query_wiki_id)], key = itemgetter(0), reverse = True)
-
-		        relevance = []
-
-		        for score, rel in sorted_candidate_scores[(doc_id,query_wiki_id)]:
-
-		            relevance.append(rel)
+				for score, rel in sorted_candidate_scores[(doc_id,query_wiki_id)]:
+					relevance.append(rel)
 		        
-		        ndcg[(doc_id,query_wiki_id)] = ndcg_at_k(relevance,N)
+					ndcg[(doc_id,query_wiki_id)] = ndcg_at_k(relevance,N)
 
-		        AP[(doc_id,query_wiki_id)] = average_precision(relevance)
+					AP[(doc_id,query_wiki_id)] = average_precision(relevance)
 
-		        #print sorted_candidate_scores
+			     #print sorted_candidate_scores
 
-  		c += 1
+        except IndexError:
+			pass
 
-  	print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
+        c = c + 1
+
+    print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
 	
     print np.mean(ndcg.values()), np.mean(AP.values())
 
