@@ -12,7 +12,7 @@ import time
 def scorer(embeddings, gold_standard,N, similarity):
 
     similarity = similarity
-    gold_standard = pd.read_table(gold_standard, header = None)
+    gold_standard = pd.read_table(gold_standard, delimiter = ' ',header = None)
 
     candidate_scores = defaultdict(list)
 
@@ -30,29 +30,31 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     c = 0
 
+    l = len(gold_standard.values)
+
     for i in gold_standard.values:
 
     	doc_id = int(i[0])
 
-        query_wiki_id = int(i[2])
+        query_id = int(i[1])
 
-    	queries_id_list.append(query_wiki_id) #to check when the query entity is changing
+    	queries_id_list.append(query_id) #to check when the query entity is changing
 
     	doc_id_list.append(doc_id) #check when the document is changing
 
-        candidate_wiki_id = int(i[4])
+        candidate_wiki_id = int(i[2])
 
-        truth_value = int(i[5])
+        truth_value = int(i[3])
 
-        print doc_id,query_wiki_id, candidate_wiki_id, truth_value
+        print doc_id,query_id, candidate_wiki_id, truth_value
 
-        query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
+        query_e2v = e2v_embeddings[e2v_embeddings[0] == query_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
 
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
 
         #print query_e2v, candidate_e2v
 
-        candidate_scores[(doc_id,query_wiki_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
+        candidate_scores[(doc_id,query_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
 
         if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
@@ -78,10 +80,24 @@ def scorer(embeddings, gold_standard,N, similarity):
 
 			print AP[(prev_doc_id,prev_query_id)]
 
-
         c = c + 1
 
-    print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
+        if c == l: #end of the file, needs to add to the dictionary the current element, which is the last query
+
+			sorted_candidate_scores[(doc_id,query_id)] = sorted(candidate_scores[(doc_id,query_id)], key = itemgetter(0), reverse = True)
+
+			relevance = []	
+
+			for score, rel in sorted_candidate_scores[(doc_id,query_id)]:
+				relevance.append(rel)
+
+			ndcg[(doc_id,query_id)] = ndcg_at_k(relevance,N)
+
+			AP[(doc_id,query_id)] = average_precision(relevance)
+
+			print AP[(doc_id,query_id)]
+
+    print sorted_candidate_scores[(doc_id,query_id)] #see an example
 	
     print np.mean(ndcg.values()), np.mean(AP.values())
 
