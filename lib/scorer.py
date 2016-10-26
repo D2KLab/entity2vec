@@ -8,6 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 import optparse
 from ranking import ndcg_at_k, average_precision 
 import time
+import sys
 
 def scorer(embeddings, gold_standard,N, similarity):
 
@@ -32,6 +33,10 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     l = len(gold_standard.values)
 
+    missing_query_entities = []
+
+    missing_candidate_entities = []
+
     for i in gold_standard.values:
 
     	doc_id = int(i[0])
@@ -51,6 +56,15 @@ def scorer(embeddings, gold_standard,N, similarity):
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
 
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
+
+        if len(query_e2v) == 0:
+        	
+        	missing_query_entities.append(query_id)
+        	
+
+        if len(candidate_e2v) == 0:
+        	missing_candidate_entities.append(query_id)
+        	
 
         #print query_e2v, candidate_e2v
 
@@ -100,6 +114,8 @@ def scorer(embeddings, gold_standard,N, similarity):
     print sorted_candidate_scores[(doc_id,query_id)] #see an example
 	
     print np.mean(ndcg.values()), np.mean(AP.values())
+
+    print set(missing_query_entities), set(missing_candidate_entities)
 
 
 def similarity_function(vec1,vec2, similarity):
