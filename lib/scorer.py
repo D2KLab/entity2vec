@@ -80,32 +80,35 @@ def scorer(embeddings, gold_standard,N, similarity):
 
             prev_query_id = queries_id_list[c - 1]
 
-            if similarity_function == 'softmax':
+            #if similarity == 'softmax':
 
-                similarities = [sim for sim, truth in candidate_scores.itervalues()] #we need to exclude the present one
+            #    similarities = [sim for sim, truth in candidate_scores[(prev_doc_id, prev_query_id)]] 
 
-                print similarities
+            #    print similarities
 
-                current_values = candidate_scores[(prev_doc_id, prev_query_id)]
+                #current_values = candidate_scores[(prev_doc_id, prev_query_id)]
 
-                similarities.remove(current_values)
+                #similarities.remove(current_values)
 
-                similarities_neg_samples = np.random.choice(similarities, size = 20)
+                #similarities_neg_samples = np.random.choice(similarities, size = 20)
 
-                normalization = sum(similarities_neg_samples)
+            #    normalization = sum(similarities)
 
                 #normalize the values of the similarities
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+            #    print candidate_scores[(prev_doc_id, prev_query_id)]
 
-                for key, pair in candidate_scores.iteritems():
+            #    for sim, truth in candidate_scores[(prev_doc_id, prev_query_id)]:
 
-                    sim = pair[0]
+            #        new_sim = sim/normalization
 
-                    truth = pair[1]
+            #       print new_sim
 
-                    new_sim = sim/normalization
+                    #candidate_scores[(prev_doc_id, prev_query_id)].append((new_sim, truth))    
 
-                    candidate_scores[key] = (new_sim, truth)                
+            #    print candidate_scores[(prev_doc_id, prev_query_id)]
 
+            #    sys.exit()
 
             sorted_candidate_scores[(prev_doc_id,prev_query_id)] = sorted(candidate_scores[(prev_doc_id,prev_query_id)], key = itemgetter(0), reverse = True)
 
@@ -169,7 +172,7 @@ def similarity_function(vec1,vec2, similarity):
 
         elif similarity == 'softmax':
 
-            return  np.exp(np.dot(v1,v2))
+            return np.exp(np.dot(v1[0],v2[0])) #normalization is useless for relative comparisons
 
         elif similarity == 'linear_kernel':
             return linear_kernel(v1,v2)[0][0]
