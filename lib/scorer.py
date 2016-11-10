@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import json
-#from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
 from operator import itemgetter
 from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
@@ -29,6 +28,8 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     doc_id_list = []
 
+    similarities = []
+
     c = 0
 
     l = len(gold_standard.values)
@@ -47,15 +48,15 @@ def scorer(embeddings, gold_standard,N, similarity):
 
     	doc_id_list.append(doc_id) #check when the document is changing
 
-        candidate_wiki_id = int(i[2])
+        candidate_id = int(i[2])
 
         truth_value = int(i[3])
 
-        print doc_id,query_id, candidate_wiki_id, truth_value
+        print doc_id,query_id, candidate_id, truth_value
 
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
 
-        candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
+        candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_id].values
 
         if len(query_e2v) == 0:
         	
@@ -63,8 +64,8 @@ def scorer(embeddings, gold_standard,N, similarity):
         	
 
         if len(candidate_e2v) == 0:
-        	missing_candidate_entities.append(query_id)
-        	
+
+        	missing_candidate_entities.append(candidate_id)
 
         #print query_e2v, candidate_e2v
 
@@ -78,6 +79,29 @@ def scorer(embeddings, gold_standard,N, similarity):
 			prev_doc_id = doc_id_list[c - 1]
 
 			prev_query_id = queries_id_list[c - 1]
+
+            if similarity_function == 'softmax':
+
+                similarities = [sim for sim, truth in candidate_scores.itervalues()] #we need to exclude the present one
+
+                similarities.remove(candidate_scores[(prev_doc_id, prev_query_id)])
+
+                similarities_neg_samples = np.random.choice(similarities, size = 20)
+
+                normalization = sum(similarities_neg_samples)
+
+                #normalize the values of the similarities
+
+				for key, pair in candidate_scores.iteritems():
+
+					sim = pair[0]
+
+					truth = pair[1]
+
+					new_sim = sim/normalization
+
+					candidate_scores[key] = (new_sim, truth)                
+
 
 			sorted_candidate_scores[(prev_doc_id,prev_query_id)] = sorted(candidate_scores[(prev_doc_id,prev_query_id)], key = itemgetter(0), reverse = True)
 
@@ -93,6 +117,7 @@ def scorer(embeddings, gold_standard,N, similarity):
 			AP[(prev_doc_id,prev_query_id)] = average_precision(relevance)
 
 			print AP[(prev_doc_id,prev_query_id)]
+
 
         c = c + 1
 
@@ -138,11 +163,9 @@ def similarity_function(vec1,vec2, similarity):
 
             return cosine_similarity(v1,v2)[0][0] #returns an double array [[sim]]
 
-        elif similarity == 'L1':
-            return  0
+        elif similarity == 'softmax':
 
-        elif similarity == 'L2':
-            return 0
+            return  np.exp(np.dot(v1,v2))
 
         elif similarity == 'linear_kernel':
             return linear_kernel(v1,v2)[0][0]
