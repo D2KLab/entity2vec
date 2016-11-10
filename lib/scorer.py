@@ -76,15 +76,19 @@ def scorer(embeddings, gold_standard,N, similarity):
 
 			#get the doc_id and wiki_id of the previous iteration
 
-			prev_doc_id = doc_id_list[c - 1]
+            prev_doc_id = doc_id_list[c - 1]
 
-			prev_query_id = queries_id_list[c - 1]
+            prev_query_id = queries_id_list[c - 1]
 
             if similarity_function == 'softmax':
 
                 similarities = [sim for sim, truth in candidate_scores.itervalues()] #we need to exclude the present one
 
-                similarities.remove(candidate_scores[(prev_doc_id, prev_query_id)])
+                print similarities
+
+                current_values = candidate_scores[(prev_doc_id, prev_query_id)]
+
+                similarities.remove(current_values)
 
                 similarities_neg_samples = np.random.choice(similarities, size = 20)
 
@@ -92,31 +96,31 @@ def scorer(embeddings, gold_standard,N, similarity):
 
                 #normalize the values of the similarities
 
-				for key, pair in candidate_scores.iteritems():
+                for key, pair in candidate_scores.iteritems():
 
-					sim = pair[0]
+                    sim = pair[0]
 
-					truth = pair[1]
+                    truth = pair[1]
 
-					new_sim = sim/normalization
+                    new_sim = sim/normalization
 
-					candidate_scores[key] = (new_sim, truth)                
+                    candidate_scores[key] = (new_sim, truth)                
 
 
-			sorted_candidate_scores[(prev_doc_id,prev_query_id)] = sorted(candidate_scores[(prev_doc_id,prev_query_id)], key = itemgetter(0), reverse = True)
+            sorted_candidate_scores[(prev_doc_id,prev_query_id)] = sorted(candidate_scores[(prev_doc_id,prev_query_id)], key = itemgetter(0), reverse = True)
 
-			relevance = []	
+            relevance = []	
 
-			for score, rel in sorted_candidate_scores[(prev_doc_id,prev_query_id)]:
-				relevance.append(rel)
+            for score, rel in sorted_candidate_scores[(prev_doc_id,prev_query_id)]:
+                relevance.append(rel)
 
-			print relevance
+            print relevance
 		        
-			ndcg[(prev_doc_id,prev_query_id)] = ndcg_at_k(relevance,N)
+            ndcg[(prev_doc_id,prev_query_id)] = ndcg_at_k(relevance,N)
 
-			AP[(prev_doc_id,prev_query_id)] = average_precision(relevance)
+            AP[(prev_doc_id,prev_query_id)] = average_precision(relevance)
 
-			print AP[(prev_doc_id,prev_query_id)]
+            print AP[(prev_doc_id,prev_query_id)]
 
 
         c = c + 1
