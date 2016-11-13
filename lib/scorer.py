@@ -117,13 +117,13 @@ def scorer(embeddings, gold_standard,N, similarity):
             for score, rel in sorted_candidate_scores[(prev_doc_id,prev_query_id)]:
                 relevance.append(rel)
 
-            print relevance
+           #print relevance
 		        
             ndcg[(prev_doc_id,prev_query_id)] = ndcg_at_k(relevance,N)
 
             AP[(prev_doc_id,prev_query_id)] = average_precision(relevance)
 
-            print AP[(prev_doc_id,prev_query_id)]
+            #print AP[(prev_doc_id,prev_query_id)]
 
 
         c = c + 1
