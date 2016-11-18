@@ -2,12 +2,14 @@ import numpy as np
 import pandas as pd
 import json
 from collections import defaultdict
-from operator import itemgetter
+from operator import itemgetter, mod
 from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 import optparse
 from ranking import ndcg_at_k, average_precision 
 import time
 import sys
+from scipy.stats import spearmanr
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 def scorer(embeddings, gold_standard,N, similarity):
 
@@ -150,6 +152,143 @@ def scorer(embeddings, gold_standard,N, similarity):
     print set(missing_query_entities), set(missing_candidate_entities)
 
 
+def scorer_kore(embeddings, gold_standard,N, similarity):
+
+    similarity = similarity
+
+    candidate_scores = defaultdict(list)
+
+    #sorted_candidate_scores = defaultdict(list)
+
+    e2v_embeddings = get_e2v_embedding(embeddings)
+
+    gold_standard_dict = defaultdict(list)
+
+    ndcg = {}
+
+    AP = {}
+
+    missing_query_entities = []
+
+    missing_candidate_entities = []
+
+    scores = []
+
+    #read the gold the standard and save it as a dictionary
+
+    gs = open(gold_standard)
+
+    lines = gs.readlines()
+
+    gs.close()
+
+    c = 0
+
+    #define the gold standard dict
+
+    for line in lines:
+
+        label = line.strip(' ').replace(' ','_').replace('\n','').replace('\t','') #clean the string
+
+
+        if mod(c,21) == 0:
+
+            key = label
+            gold_standard_dict[key] = []
+
+        else: 
+
+            gold_standard_dict[key].append(label)
+
+        c += 1
+
+    #define the predicted ranking and scores
+    #print gold_standard_dict['Apple_Inc.']
+
+    c = 0
+
+    for line in lines:
+
+        label = line.strip(' ').replace(' ','_').replace('\n','').replace('\t','') #clean the string
+
+        print label
+
+        if c == len(lines) - 1: #reached the end of file
+
+            ranking_tuples = sorted(candidate_scores[query_id], key = itemgetter(0), reverse = True)
+
+            ranking = [j for i,j in ranking_tuples]
+
+            gs_ranking = gold_standard_dict[key]
+
+            scores.append(spearmanr(ranking,gs_ranking)[0])
+
+
+        if mod(c,21) == 0: #every twenty lines changing the key, new query entity
+
+            if c != 0:
+
+                ranking_tuples = sorted(candidate_scores[query_id], key = itemgetter(0), reverse = True)
+
+                ranking = [j for i,j in ranking_tuples]
+
+                gs_ranking = gold_standard_dict[key]
+
+                print gs_ranking
+
+                scores.append(spearmanr(ranking,gs_ranking)[0])
+
+            key = label
+
+            query_id = get_id_from_label(str(label)) 
+
+            query_e2v = e2v_embeddings[e2v_embeddings[0] == query_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
+
+            if len(query_e2v) == 0:
+                missing_query_entities.append(label)
+
+        else:
+
+            #print key
+
+            candidate_id = get_id_from_label(str(label))
+
+            candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
+
+            if len(candidate_e2v) == 0:
+                missing_candidate_entities.append(label)
+
+            candidate_scores[query_id].append((similarity_function(query_e2v,candidate_e2v, similarity),label)) #pair (score, candidate_name)
+
+        c += 1
+
+    print candidate_scores['Chuck_Norris'] #mancante, da aggiungere l'ultimo
+    print missing_query_entities
+    print missing_candidate_entities
+    print len(scores)
+    
+    it_companies = np.mean(scores[0:5])
+
+    celebrities = np.mean(scores[5:10])
+
+    video_games = np.mean(scores[10:15])
+
+    tv_series = np.mean(scores[15:20])
+
+    chuck_norris = scores[20]
+
+    print 'it_companies: %f\n' %it_companies
+
+    print 'celebrities: %f\n' %celebrities
+
+    print 'video_games: %f\n' %video_games
+
+    print 'tv_series: %f\n' %tv_series
+
+    print 'chuck_norris: %f\n' %chuck_norris
+
+
+
 def similarity_function(vec1,vec2, similarity):
     
     #compute cosine similarity or other similarities
@@ -189,6 +328,8 @@ def get_e2v_embedding(embeddings):
     return emb
 
 
+
+
 def wiki_to_local(wiki_id):
 
     url = get_url_from_id(wiki_id)
@@ -208,6 +349,24 @@ def wiki_to_local(wiki_id):
     return local_id
 
 
+def get_id_from_label(label):
+
+    print label
+
+    label = label.decode('utf8')
+
+    sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+    url = '<http://dbpedia.org/resource/'+label+'>'
+
+    sparql.setQuery("""
+     SELECT ?uri ?id  WHERE {
+     ?uri <http://dbpedia.org/ontology/wikiPageID> ?id.
+     FILTER (?uri = %s) }""" %url)
+
+    sparql.setReturnFormat(JSON)
+
+    return int(sparql.query().convert()['results']['bindings'][0]['id']['value'])
 
 def get_url_from_id(wiki_id):
 
@@ -232,6 +391,7 @@ if __name__ == '__main__':
     parser.add_option('-g','--gold', dest = 'gold_standard_name', help = 'gold_standard_name')
     parser.add_option('-N','--number', dest = 'N', help = 'cutting threshold scorers',type = int)
     parser.add_option('-s','--similarity', dest = 'similarity', help = 'similarity measure')
+    parser.add_option('-k','--kore', dest = 'kore', action = "store_true", default = False, help = 'kore dataset')
 
     (options, args) = parser.parse_args()
 
@@ -255,11 +415,20 @@ if __name__ == '__main__':
 
     similarity = options.similarity
 
+    kore = options.kore
+
     count = 0
 
     start_time = time.time()
 
-    scorer(file_name, gold_standard_name,N, similarity)
+
+    if kore == True:
+
+        scorer_kore(file_name, gold_standard_name,N, similarity)
+
+    else:
+
+        scorer(file_name, gold_standard_name,N, similarity)
 
     print 'number of entities not found is %d' %count
 
