@@ -10,6 +10,7 @@ import time
 import sys
 from scipy.stats import spearmanr
 from SPARQLWrapper import SPARQLWrapper, JSON
+from random import shuffle
 
 def scorer(embeddings, gold_standard,N, similarity):
 
@@ -202,10 +203,12 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
         c += 1
 
+
     #define the predicted ranking and scores
-    #print gold_standard_dict['Apple_Inc.']
 
     c = 0
+
+    dots = []
 
     for line in lines:
 
@@ -215,11 +218,32 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
         if c == len(lines) - 1: #reached the end of file
 
+            print 'end of file'
+
+            candidate_id = get_id_from_label(str(label))
+
+            candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
+
+            if len(candidate_e2v) == 0:
+                missing_candidate_entities.append(label)
+
+            candidates = candidate_scores[query_id] 
+
+            shuffle(candidates)
+
+            candidate_scores[query_id] = candidates
+
+            candidate_scores[query_id].append((similarity_function(query_e2v,candidate_e2v, similarity),label)) #pair (score, candidate_name)
+
             ranking_tuples = sorted(candidate_scores[query_id], key = itemgetter(0), reverse = True)
 
             ranking = [j for i,j in ranking_tuples]
 
-            gs_ranking = gold_standard_dict[key]
+            gs_ranking = gold_standard_dict[key]    
+
+            print ranking
+
+            print gs_ranking
 
             scores.append(spearmanr(ranking,gs_ranking)[0])
 
@@ -228,13 +252,17 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
             if c != 0:
 
+                candidates = candidate_scores[query_id] 
+
+                shuffle(candidates)
+
+                candidate_scores[query_id] = candidates
+
                 ranking_tuples = sorted(candidate_scores[query_id], key = itemgetter(0), reverse = True)
 
                 ranking = [j for i,j in ranking_tuples]
 
                 gs_ranking = gold_standard_dict[key]
-
-                print gs_ranking
 
                 scores.append(spearmanr(ranking,gs_ranking)[0])
 
@@ -262,11 +290,11 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
         c += 1
 
-    print candidate_scores['Chuck_Norris'] #mancante, da aggiungere l'ultimo
     print missing_query_entities
     print missing_candidate_entities
     print len(scores)
-    
+    print candidate_scores
+  
     it_companies = np.mean(scores[0:5])
 
     celebrities = np.mean(scores[5:10])
@@ -311,7 +339,7 @@ def similarity_function(vec1,vec2, similarity):
 
         elif similarity == 'softmax':
 
-            return np.exp(np.dot(v1[0],v2[0])) #normalization is useless for relative comparisons
+            return np.exp(np.dot(v1[0],v2[0]) - 10**9   ) #normalization is useless for relative comparisons
 
         elif similarity == 'linear_kernel':
             return linear_kernel(v1,v2)[0][0]
@@ -351,7 +379,7 @@ def wiki_to_local(wiki_id):
 
 def get_id_from_label(label):
 
-    print label
+    #print label
 
     label = label.decode('utf8')
 
