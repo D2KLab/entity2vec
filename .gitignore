@@ -6,9 +6,14 @@ __pycache__/
 # C extensions
 *.so
 
+.*
+
 datasets/
 dictionaries/
 emb/old/
 emb/
 graph/
 lib/Snap-3.0/
+results/
+rdf2vec/
+nohup.out

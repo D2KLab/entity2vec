@@ -23,7 +23,7 @@ output_file = options.output_file
 
 wiki_from_url_dict = {}
 
-with open('datasets/page_ids_en.ttl','r') as f:
+with open('datasets/page_ids_en_2016.ttl','r') as f:
 
     for line in f:
 
@@ -67,7 +67,7 @@ with open(input_file) as page_links:
         except (KeyError, IndexError):
         	continue
 
-        output_file_write.write('%d %d' %(wiki_id1,wiki_id2))
+        output_file_write.write('%d %d\n' %(wiki_id1,wiki_id2))
 
 
 output_file_write.close()

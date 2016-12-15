@@ -92,7 +92,7 @@ def learn_embeddings(walks):
 	print "defined walks inside learn embeddings"
 
 	model = Word2Vec(walks, size=args.dimensions, window=args.window_size, min_count=0, 
-		workers=args.workers, iter=args.iter, negative = 25, sg = 1)
+		workers=args.workers, iter=args.iter, negative = 25, sg = 0)
 	print "defined model using w2v"
 	model.save_word2vec_format(args.output)
 	print "saved model in word2vec format"

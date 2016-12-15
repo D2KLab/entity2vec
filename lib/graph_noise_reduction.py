@@ -1,15 +1,25 @@
 import networkx as nx
-import pandas as pd
+from itertools import chain
 
 #this script is meant to remove all the pages with fewer than 5 incoming links
 #noise reduction process
 
-G0 = nx.read_edgelist('../graph/page_links_en.edgelist', nodetype=int)
+G = nx.read_edgelist('../datasets/dbpedia_resources_wiki.edgelist', nodetype=int, create_using=nx.DiGraph())
+print 'read graph'
 
-G = nx.DiGraph()
+remove_nodes_out = (node for node,degree in G.out_degree().iteritems() if degree == 0) #nodes with out_degree = 0
 
-for i,j in G0.edges():
-    if G0.in_degree()[i] >= 5 and G0.in_degree()[j] >=5:
-        G.add_edge(i,j)
+remove_nodes_in = (node for node,degree in G.in_degree().iteritems() if degree == 0) #nodes with in_degree = 0
 
-nx.write_edgelist(G,'../graph/page_links_en_reduced.edgelist', data = False)
+remove_nodes = chain(remove_nodes_out, remove_nodes_in)
+
+G.remove_nodes_from(remove_nodes)
+
+print 'graph has %d nodes and %d edges' %(len(G.nodes()), len(G.edges()))
+
+
+print "writing graph"
+
+nx.write_edgelist(G,'../graph/dbpedia_resources_wiki_reduced_1_out_1_in.edgelist', data = False)
+
+

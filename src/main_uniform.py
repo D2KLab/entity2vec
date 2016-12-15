@@ -12,9 +12,8 @@ Knowledge Discovery and Data Mining (KDD), 2016
 import argparse
 import numpy as np
 import networkx as nx
-import node2vec
+import node2vec_uniform
 from gensim.models import Word2Vec
-import os
 
 import time
 
@@ -31,19 +30,19 @@ def parse_args():
 	parser.add_argument('--output', nargs='?', default='emb/karate.emb',
 	                    help='Embeddings path')
 
-	parser.add_argument('--dimensions', type=int, default=200,
+	parser.add_argument('--dimensions', type=int, default=128,
 	                    help='Number of dimensions. Default is 128.')
 
-	parser.add_argument('--walk-length', type=int, default=8,
+	parser.add_argument('--walk-length', type=int, default=10,
 	                    help='Length of walk per source. Default is 10.')
 
-	parser.add_argument('--num-walks', type=int, default=500,
+	parser.add_argument('--num-walks', type=int, default=10,
 	                    help='Number of walks per source. Default is 40.')
 
-	parser.add_argument('--window-size', type=int, default=5,
+	parser.add_argument('--window-size', type=int, default=10,
                     	help='Context size for optimization. Default is 10.')
 
-	parser.add_argument('--iter', default=5, type=int,
+	parser.add_argument('--iter', default=1, type=int,
                       help='Number of epochs in SGD')
 
 	parser.add_argument('--workers', type=int, default=8,
@@ -63,7 +62,7 @@ def parse_args():
 	parser.add_argument('--directed', dest='directed', action='store_true',
 	                    help='Graph is (un)directed. Default is undirected.')
 	parser.add_argument('--undirected', dest='undirected', action='store_false')
-	parser.set_defaults(directed=True)
+	parser.set_defaults(directed=False)
 
 	return parser.parse_args()
 
@@ -89,10 +88,14 @@ def learn_embeddings(walks):
 	Learn embeddings by optimizing the Skipgram objective using SGD.
 	'''
 	walks = [map(str, walk) for walk in walks]
-	print "defined walks inside learn embeddings"
 
+
+	for walk in walks:
+		os.system('echo %s >> walks_p%f_q%f.txt' %(walk,args.p,args.q))
+
+	print "defined walks inside learn embeddings"
 	model = Word2Vec(walks, size=args.dimensions, window=args.window_size, min_count=0, 
-		workers=args.workers, iter=args.iter, negative = 25, sg = 1)
+		workers=args.workers, iter=args.iter, negative = 15)
 	print "defined model using w2v"
 	model.save_word2vec_format(args.output)
 	print "saved model in word2vec format"
@@ -102,16 +105,16 @@ def learn_embeddings(walks):
 def main(args):
 	'''
 	Pipeline for representational learning for all nodes in a graph.
-	'''	
+	'''
 
 	start_time = time.time()
 
 	nx_G = read_graph()
 	print 'read graph'
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	G = node2vec_uniform.Graph(nx_G, args.directed, args.p, args.q)
 	print 'defined G'
-	G.preprocess_transition_probs()
-	print 'preprocessed'
+	#G.preprocess_transition_probs()
+	#print 'preprocessed'
 	walks = G.simulate_walks(args.num_walks, args.walk_length)
 	print 'defined walk'
 	learn_embeddings(walks)
@@ -121,7 +124,6 @@ def main(args):
 	print("--- %s seconds ---" % (time.time() - start_time))
 
 args = parse_args()
-
 main(args)
 
 
