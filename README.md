@@ -1,10 +1,12 @@
 # entity2vec
-entity2vec computes embeddings of entities in a Knowledge Graph by using the Word2Vec model on the neighboring entities. 
+entity2vec computes vector representations of Knowledge Graph entities that preserve semantic similarities and are suitable for classification tasks.
+
+0) Create empty directory called emb
 
 1) Compute embeddings, e.g.:
 
-python -u src/main.py --input graph/page_links_en_wikipedia_id_reduced_largeq_1_out.edgelist --output emb/dbpedia_2015_p0.3_q1_reduced_1_equal_out.emd --directed --workers 48 --p 0.3 --q 1
+python src/main.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.emd --p 1 --q 4
 
 2) Obtain scores, e.g.:
 
-python lib/scorer.py -i emb/dbpedia_2015_p0.3_q1_reduced_1_equal_out.emd -g datasets/relatedness-assessment.tsv -s cosine 
+python ml/rdf_predict.py --dataset aifb --emb emb/aifb_p1_q4.emd 
