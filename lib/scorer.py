@@ -1,68 +1,124 @@
 import numpy as np
 import pandas as pd
 import json
-from SPARQLWrapper import SPARQLWrapper, JSON
+#from SPARQLWrapper import SPARQLWrapper, JSON
 from collections import defaultdict
 from operator import itemgetter
-from sklearn.metrics.pairwise import cosine_similarity  
+from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 import optparse
-from ranking import ndcg_at_k, mean_average_precision 
+from ranking import ndcg_at_k, average_precision 
+import time
 
+def scorer(embeddings, gold_standard,N, similarity):
 
-def scorer(embeddings, gold_standard,N):
-
+    similarity = similarity
     gold_standard = pd.read_table(gold_standard, header = None)
 
     candidate_scores = defaultdict(list)
 
+    sorted_candidate_scores = defaultdict(list)
+
+    e2v_embeddings = get_e2v_embedding(embeddings)
+
+    ndcg = {}
+
+    AP = {}
+
+    queries_id_list = []
+
+    doc_id_list = []
+
+    c = 0
+
     for i in gold_standard.values:
 
-        print i[2]
+    	doc_id = int(i[0])
 
-        query_wiki_id = i[2]
-
-        candidate_wiki_id = i[4]
-
-        truth_value = i[5]
+        query_wiki_id = int(i[2])
 
         e2v_embeddings = get_e2v_embedding(embeddings)
 
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values
 
+    	queries_id_list.append(query_wiki_id) #to check when the query entity is changing
+
+    	doc_id_list.append(doc_id) #check when the document is changing
+
+        candidate_wiki_id = int(i[4])
+
+        truth_value = int(i[5])
+
+        print query_wiki_id, candidate_wiki_id, truth_value
+
+        query_e2v = e2v_embeddings[e2v_embeddings[0] == query_wiki_id].values #query vector = [0.2,-0.3,0.1,0.7 ...]
+
         candidate_e2v = e2v_embeddings[e2v_embeddings[0] == candidate_wiki_id].values
 
         print query_e2v, candidate_e2v
 
-        candidate_scores[query_wiki_id].append((similarity(query_e2v,candidate_e2v),truth_value))
+        candidate_scores[(doc_id,query_wiki_id)].append((similarity_function(query_e2v,candidate_e2v, similarity),truth_value))
 
 
-    sorted_candidate_scores = sorted(candidate_scores.values(), key = itemgetter(0), reverse = True)
+        if c == 0:
 
-    relevance = []
+        	pass
 
-    for score, rel in storted_candidate_scores:
+        else:
 
-        relevance.append(rel)
+	    	if queries_id_list[c - 1] != queries_id_list[c] or doc_id_list[c - 1] != doc_id_list[c]: #new query entity or new document, we can sort them and score
 
-        
-    print ndcg_at_k(relevance,N), mean_average_precision(relevance)
+		        sorted_candidate_scores[(doc_id,query_wiki_id)] = sorted(candidate_scores[(doc_id,query_wiki_id)], key = itemgetter(0), reverse = True)
+
+		        relevance = []
+
+		        for score, rel in sorted_candidate_scores[(doc_id,query_wiki_id)]:
+
+		            relevance.append(rel)
+		        
+		        ndcg[(doc_id,query_wiki_id)] = ndcg_at_k(relevance,N)
+
+		        AP[(doc_id,query_wiki_id)] = average_precision(relevance)
+
+		        #print sorted_candidate_scores
+
+  		c += 1
+
+  	print sorted_candidate_scores[(doc_id,query_wiki_id)] #see an example
+	
+    print np.mean(ndcg.values()), np.mean(AP.values())
 
 
-
-def similarity(vec1,vec2):
+def similarity_function(vec1,vec2, similarity):
     
     #compute cosine similarity or other similarities
 
     v1 = np.array(vec1)
 
-    v1 = v1.reshape(1,-1)
-
     v2 = np.array(vec2)
 
-    v2 = v2.reshape(1,-1)
+    if len(v1)*len(v2) == 0: #any of the two is 0
+        global count
+        count +=1
 
-    return cosine_similarity(v1,v2)
+        return 0
 
+    else:
+
+        if similarity == 'cosine':
+
+            return cosine_similarity(v1,v2)[0][0] #returns an double array [[sim]]
+
+        elif similarity == 'L1':
+            return  0
+
+        elif similarity == 'L2':
+            return 0
+
+        elif similarity == 'linear_kernel':
+            return linear_kernel(v1,v2)[0][0]
+
+        else:
+            raise NameError('Choose a valid similarity function')
 
 def get_e2v_embedding(embeddings):
 
@@ -111,11 +167,11 @@ def get_url_from_id(wiki_id):
 
 if __name__ == '__main__':
 
-
     parser = optparse.OptionParser()
     parser.add_option('-i','--input', dest = 'file_name', help = 'file_name')
     parser.add_option('-g','--gold', dest = 'gold_standard_name', help = 'gold_standard_name')
     parser.add_option('-N','--number', dest = 'N', help = 'cutting threshold scorers',type = int)
+    parser.add_option('-s','--similarity', dest = 'similarity', help = 'similarity measure')
 
     (options, args) = parser.parse_args()
 
@@ -128,11 +184,25 @@ if __name__ == '__main__':
     if options.N is None:
         options.N = 10
 
+    if options.similarity is None:
+        options.similarity = 'cosine'
+
     file_name = options.file_name
 
     gold_standard_name = options.gold_standard_name
 
     N = options.N
 
-    scorer(file_name, gold_standard_name,N)
+    similarity = options.similarity
 
+    count = 0
+
+    start_time = time.time()
+
+    scorer(file_name, gold_standard_name,N, similarity)
+
+    print 'number of entities not found is %d' %count
+
+    print 'elapsed time is:\n'
+
+    print("--- %s seconds ---" % (time.time() - start_time))

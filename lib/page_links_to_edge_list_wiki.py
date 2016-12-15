@@ -62,7 +62,6 @@ with open(input_file) as page_links:
         url_1 = line[0]
         url_2 = line[2]
 
-
         try:
 
             wiki_id1 = wiki_from_url_dict[url_1]
@@ -75,6 +74,7 @@ with open(input_file) as page_links:
             continue
 
         output_file_write.write('%d %d\n' %(wiki_id1,wiki_id2))
+
 
         print count
 

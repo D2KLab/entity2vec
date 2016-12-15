@@ -9,5 +9,8 @@ __pycache__/
 datasets/
 dictionaries/
 emb/old/
+emb/
 graph/
 lib/Snap-3.0/
+ml/pca_plots/
+ml/notebooks/
