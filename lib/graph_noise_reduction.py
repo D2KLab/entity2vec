@@ -22,4 +22,3 @@ print "writing graph"
 
 nx.write_edgelist(G,'../graph/dbpedia_resources_wiki_reduced_1_out_1_in.edgelist', data = False)
 
-

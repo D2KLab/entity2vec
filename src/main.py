@@ -31,7 +31,8 @@ def parse_args():
 	parser.add_argument('--output', nargs='?', default='emb/karate.emb',
 	                    help='Embeddings path')
 
-	parser.add_argument('--dimensions', type=int, default=200,
+
+	parser.add_argument('--dimensions', type=int, default=500,
 	                    help='Number of dimensions. Default is 128.')
 
 	parser.add_argument('--walk-length', type=int, default=8,

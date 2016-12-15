@@ -74,20 +74,40 @@ if __name__ == '__main__':
 
     print wiki_from_url_dict.items()[1:20]
 
+<<<<<<< HEAD
+    edge_list_local = open('graph/page_links_en_reduced_2.edgelist','rU')
+
+    edge_list_wiki = open('graph/page_links_en_reduced_2_wiki.edgelist','w')
+=======
     edge_list_local = open('graph/page_links_en_reduced_5.edgelist','rU')
 
     edge_list_wiki = open('graph/page_links_en_reduced_5_wiki.edgelist','w')
+>>>>>>> ec9b6728a45dc2c6187198b4ed8bbedff2a94750
 
     #turn the local_id edgelist into a wiki_id edgelist through the afore defined dictionaries
     # local_id -> url -> wiki_id 
 
     for line in edge_list_local:
 
+<<<<<<< HEAD
+        #line_header = line.split(' ')
+
+        #if line_header[0] == '#': #skip comments
+        #    continue
+        line = line.split(' ')
+        #line = line.split('\t')
+
+        if line[0] == '#':
+            continue
+
+
+=======
         line = line.split(' ')
 
         if line[0] == '#': #skip comments
             continue
 
+>>>>>>> ec9b6728a45dc2c6187198b4ed8bbedff2a94750
         local_id1 = int(line[0])
         local_id2 = int(line[1])
 
@@ -102,7 +122,11 @@ if __name__ == '__main__':
         except (KeyError,IndexError):
             continue
 
+<<<<<<< HEAD
+        edge_list_wiki.write('%s %s\n'%(wiki_id1,wiki_id2))
+=======
         edge_list_wiki.write('%s,%s\n'%(wiki_id1,wiki_id2))
+>>>>>>> ec9b6728a45dc2c6187198b4ed8bbedff2a94750
 
     edge_list_wiki.close()
 

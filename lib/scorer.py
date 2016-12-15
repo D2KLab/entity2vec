@@ -3,7 +3,7 @@ import pandas as pd
 import json
 from collections import defaultdict
 from operator import itemgetter, mod
-from sklearn.metrics.pairwise import cosine_similarity, linear_kernel, euclidean_distances
+from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 import optparse
 from ranking import ndcg_at_k, average_precision 
 import time
@@ -186,8 +186,6 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
         label = line.strip(' ').replace(' ','_').replace('\n','').replace('\t','') #clean the string
 
-        #print label
-
         if c == len(lines) - 1: #reached the end of file
 
             print 'end of file'
@@ -224,8 +222,6 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
             if c != 0:
 
-                #shuffle the candidates associated to a given query
-
                 candidates = candidate_scores[query_id] 
 
                 shuffle(candidates)
@@ -237,8 +233,6 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
                 ranking_tuples = sorted(candidate_scores[query_id], key = itemgetter(0), reverse = True)
 
                 ranking = [j for i,j in ranking_tuples]
-
-                print ranking
 
                 gs_ranking = gold_standard_dict[key]
 
@@ -256,6 +250,11 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
                 missing_query_entities.append(label)
 
         else: #candidate entity
+            if len(query_e2v) == 0:
+                missing_query_entities.append(label)
+
+        else:
+
 
             candidate_id = get_id_from_label(str(label))
 
@@ -268,12 +267,16 @@ def scorer_kore(embeddings, gold_standard,N, similarity):
 
             print query_id
 
+            if len(candidate_e2v) == 0:
+                missing_candidate_entities.append(label)
+
             candidate_scores[query_id].append((similarity_function(query_e2v,candidate_e2v, similarity),label)) #pair (score, candidate_name)
 
         c += 1
 
     print missing_query_entities
     print missing_candidate_entities
+
     print candidate_scores
   
     it_companies = np.mean(scores[0:5])
@@ -337,6 +340,8 @@ def get_e2v_embedding(embeddings):
     emb = pd.read_table(embeddings, skiprows = 1, header = None, sep = ' ')
 
     return emb
+
+
 
 
 def wiki_to_local(wiki_id):
