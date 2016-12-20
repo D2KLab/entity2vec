@@ -32,7 +32,6 @@ class Graph():
 						alias_edges[(prev, cur)][1])]
 					walk.append(next)
 			else:
-				print 'hole'
 				break
 
 		return walk
