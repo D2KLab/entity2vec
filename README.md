@@ -9,4 +9,6 @@ python src/main.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.e
 
 2) Obtain scores, e.g.:
 
-python ml/rdf_predict.py --dataset aifb --emb emb/aifb_p1_q4.emd 
+cd ml
+
+python rdf_predict.py --dataset aifb --emb ../emb/aifb_p1_q4.emd --dimension 500
