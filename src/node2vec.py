@@ -1,9 +1,12 @@
 import numpy as np
 import networkx as nx
 import random
+import gzip
+
 
 
 class Graph():
+	
 	def __init__(self, nx_G, is_directed, p, q):
 		self.G = nx_G
 		self.is_directed = is_directed
@@ -36,21 +39,35 @@ class Graph():
 
 		return walk
 
-	def simulate_walks(self, num_walks, walk_length):
+	def simulate_walks(self, num_walks, walk_length, output, p, q):
 		'''
 		Repeatedly simulate random walks from each node.
 		'''
 		G = self.G
-		walks = []
+
 		nodes = list(G.nodes())
 		print 'Walk iteration:'
-		for walk_iter in range(num_walks):
-			print str(walk_iter+1), '/', str(num_walks)
-			random.shuffle(nodes)
-			for node in nodes:
-				walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
 
-		return walks
+		with gzip.open('walks/%s_num%d_p%.1f_q%.1f_l%d.txt.gz' %(output,num_walks, p,q,walk_length),'w') as walks_file:
+			for walk_iter in range(num_walks):
+				print str(walk_iter+1), '/', str(num_walks)
+				random.shuffle(nodes)
+				for node in nodes:
+					walk = self.node2vec_walk(walk_length=walk_length, start_node=node)
+					last = walk[-1]
+					for entity in walk:
+
+						if entity == last:
+							
+							walks_file.write(''.join(entity.encode('utf-8')+'\n'))
+
+						else:
+
+							walks_file.write(''.join(entity.encode('utf-8')))
+							walks_file.write(' ')
+
+
+		return 
 
 	def get_alias_edge(self, src, dst):
 		'''
@@ -97,6 +114,10 @@ class Graph():
 			for edge in G.edges():
 				alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
 				alias_edges[(edge[1], edge[0])] = self.get_alias_edge(edge[1], edge[0])
+
+		#print alias_nodes
+
+		#print alias_edges
 
 		self.alias_nodes = alias_nodes
 		self.alias_edges = alias_edges
