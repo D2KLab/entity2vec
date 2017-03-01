@@ -48,7 +48,7 @@ class Graph():
 		nodes = list(G.nodes())
 		print 'Walk iteration:'
 
-		with gzip.open('walks/%s_num%d_p%.1f_q%.1f_l%d.txt.gz' %(output,num_walks, p,q,walk_length),'w') as walks_file:
+		with gzip.open('walks/%s' %output,'w') as walks_file:
 			for walk_iter in range(num_walks):
 				print str(walk_iter+1), '/', str(num_walks)
 				random.shuffle(nodes)
