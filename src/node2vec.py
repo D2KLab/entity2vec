@@ -54,10 +54,12 @@ class Graph():
 				random.shuffle(nodes)
 				for node in nodes:
 					walk = self.node2vec_walk(walk_length=walk_length, start_node=node)
-					last = walk[-1]
+					
+					c = 1
+					length = len(walk)
 					for entity in walk:
 
-						if entity == last:
+						if c == length:
 							
 							walks_file.write(''.join(entity.encode('utf-8')+'\n'))
 
@@ -65,7 +67,7 @@ class Graph():
 
 							walks_file.write(''.join(entity.encode('utf-8')))
 							walks_file.write(' ')
-
+							c += 1
 
 		return 
 
