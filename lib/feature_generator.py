@@ -1,17 +1,34 @@
-from scorer import get_e2v_embeddings
-from scorer import similarity_function
+from scorer import get_e2v_embedding
+from sklearn.metrics.pairwise import cosine_similarity
 import optparse
-import sys
+import os
 import codecs
-import collection
+import collections
+import numpy as np
 
-def get_e2v_embedding_vector(embedding_file,ID):
 
-	a = get_e2v_embedding(embeddings+'/'+prop)
+def similarity(vec1,vec2):
+    
+    #compute cosine similarity or other similarities
 
-	vec = a[a[0] == ID]
+	v1 = np.array(vec1)
 
-	del a
+	v2 = np.array(vec2)
+
+	if len(v1)*len(v2) == 0: #any of the two is 0
+
+		return 0
+
+	else:
+
+		return cosine_similarity([v1],[v2])[0][0] #returns a double array [[sim]]
+
+
+def get_e2v_embedding_vector(embedding_model,ID):
+
+	#a = get_e2v_embedding(embedding_file)
+
+	vec = embedding_model[embedding_model[0] == ID].values
 
 	try:
 	
@@ -22,116 +39,136 @@ def get_e2v_embedding_vector(embedding_file,ID):
 		return []
 
 
-def get_items_rated_by_user(training, user):
+def get_items_liked_by_user(training):
 
-	with codecs.open(training,'r', encoding='utf-8') as train:
+	items_liked_by_user_dict = collections.defaultdict(list)
 
-		items_rated_by_user = collection.defaultdict(list)
+	for line in training:
 
-		for line in train:
+		line = line.split(' ')
 
-				line = line.split('::')
+		u = line[0]
 
-				u = line[0]
+		item = line[1]
 
-				item = line[1]
+		relevance = int(line[2])
 
-				items_rated_by_user[u].append(item)
+		if relevance >= 4: #only relevant items are used to compute the similarity
+
+			items_liked_by_user_dict[u].append(item)
+
+	training.seek(0) #we can iterate in the file again
+
+	return items_liked_by_user_dict
 
 
-		return items_rated_by_user[user]
+def compute_item_similarity(embedding_model,prop,items_liked_by_user,item_vec, num_of_items_liked):
+
+	if len(item_vec) == 0: #if the item vec is not found, we do not consider it
+
+		return 0
+
+	else:
+
+		avg_s = 0
+
+		for past_item in items_liked_by_user:
+
+			#|(past_item)
+
+			past_item_vec = get_e2v_embedding_vector(embedding_model, past_item)
+
+			avg_s += similarity(past_item_vec,item_vec)/(num_of_items_liked)
+
+
+		return avg_s
 
 
 
 def feature_generator(embeddings, training, feature_file):
 
-feature_property = {}
+	properties = sorted(os.listdir(embeddings))[0:-1]  #we exclude the user-item, we treat it separately
 
 	with codecs.open(feature_file,'w', encoding='utf-8') as file_write:
 
 		with codecs.open(training,'r', encoding='utf-8') as train:
 
-			for line in train:
+			items_liked_by_user_dict = get_items_liked_by_user(train) #dictionary [user] : [item1,item2,item3..itemn]
 
-				line = line.split('::')
+			for i, line in enumerate(train):
 
-				user = line[0]
+				if i > 4640: #resume previous calculation, don't want to start over
 
-				item = line[1]
+					line = line.split(' ')
 
-				########################
-				## collaborative term ##
-				########################
+					user = line[0] #user29
 
-				prop = 'feedback'
+					user_id = int(user.strip('user')) #29
 
-				user_vec = get_e2v_embedding_vector(os.listdir(embeddings+'/'+prop)[0], user)
+					item = line[1] #http://dbpedia.org/resource/The_Golden_Child
 
-				item_vec = get_e2v_embedding_vector(os.listdir(embeddings+'/'+prop)[0], item)
+					relevance = int(line[2]) #5
 
-				feature_property[prop] = similarity_function(user_vec,item_vec,cosine)
+					#binarization of the relevance values
+					relevance = 1 if relevance >= 4 else 0
 
-        		########################
-        		## content-based term ##
-        		########################
+					file_write.write('%d qid:%d' %(relevance,user_id))
 
-				items_rated_by_user = get_items_rated_by_user(training, user)
+					########################
+					## collaborative term ##
+					########################
 
-				num_of_items_rated = len(items_rated_by_user)
+					#it can be considered as the first property
 
-				for prop in os.listdir(embeddings): #for each property
+					prop = 'user_item'
 
-					for past_item in items_rated_by_user:
+					print(prop)
 
-						past_item_vec = get_e2v_embedding_vector(os.listdir(embeddings+'/'+prop)[0], item)
+					emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the embedding file into memory
 
+					user_vec = get_e2v_embedding_vector(emb, user)
 
+					item_vec = get_e2v_embedding_vector(emb, item)
 
-        				feature_property[prop] = 
+					avg_s = similarity(user_vec,item_vec)
 
+					file_write.write(' 1:%f ' %avg_s)
 
-						
+					count = 2
 
+	        		########################
+	        		## content-based term ##
+	        		########################
 
+					items_liked_by_user = items_liked_by_user_dict[user]
 
+					num_of_items_liked = len(items_liked_by_user)
 
+					for prop in properties: #for each property
 
+						emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the property-embedding file into memory
 
+						item_vec = get_e2v_embedding_vector(emb, item)	#w.r.t to the current property
 
+						if prop == properties[-1]: #last element
 
+							print(prop)
 
+							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item_vec, num_of_items_liked)
 
+							file_write.write(' %d:%f # %s\n' %(count,avg_sim,item))
+							
+						else:
 
+							print(prop)
 
+							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item_vec, num_of_items_liked)
 
+							print(avg_sim)
 
+							file_write.write(' %d:%f' %(count,avg_sim))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+							count += 1
 
 
 
@@ -146,4 +183,4 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    feature_generator(options.embeddings_folder,options.feature_file,options.training_set)
+    feature_generator(options.embeddings_folder,options.training_set,options.feature_file)
