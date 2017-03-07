@@ -1,42 +1,74 @@
-from scorer import get_e2v_embedding
-from sklearn.metrics.pairwise import cosine_similarity
+#from scorer import get_e2v_embedding
+#from sklearn.metrics.pairwise import cosine_similarity
 import optparse
 import os
 import codecs
 import collections
 import numpy as np
+from gensim.models import Word2Vec
 
-
-def similarity(vec1,vec2):
+#def similarity(vec1,vec2):
     
     #compute cosine similarity or other similarities
 
-	v1 = np.array(vec1)
+#	v1 = np.array(vec1)
 
-	v2 = np.array(vec2)
+#	v2 = np.array(vec2)
 
-	if len(v1)*len(v2) == 0: #any of the two is 0
+#	if len(v1)*len(v2) == 0: #any of the two is 0
 
-		return 0
+#		return 0
 
-	else:
+#	else:
 
-		return cosine_similarity([v1],[v2])[0][0] #returns a double array [[sim]]
+#		return cosine_similarity([v1],[v2])[0][0] #returns a double array [[sim]]
+
+#def get_e2v_embedding_gensim(embedding):
+
+#	model = Word2Vec.load_word2vec_format(embedding_model, binary=True)
+
+#	return Word2Vec.load_word
+
+#def get_e2v_embedding_vector_gensim(embedding_model,ID):
+
+#	model = Word2Vec.load_word2vec_format(embedding_model, binary=False)
+
+#	return Word2Vec.load_word
+
+
+#def get_e2v_embedding_vector(embedding_model,ID):
+
+	#a = get_e2v_embedding(embedding_file)
+
+#	vec = embedding_model[embedding_model[0] == ID].values
+
+#	try:
+	
+#		return vec[0][1:]
+
+#	except IndexError:
+
+#		return []
+
+
+def get_e2v_embedding(embeddings_file):
+
+	model = Word2Vec.load_word2vec_format(embeddings_file, binary=True)
+
+	return model
 
 
 def get_e2v_embedding_vector(embedding_model,ID):
 
-	#a = get_e2v_embedding(embedding_file)
-
-	vec = embedding_model[embedding_model[0] == ID].values
+	vec = []
 
 	try:
-	
-		return vec[0][1:]
+		vec = embedding_model[ID]
 
-	except IndexError:
+	except KeyError:#empty vector if it is not found
+		pass
 
-		return []
+	return vec
 
 
 def get_items_liked_by_user(training):
@@ -62,26 +94,21 @@ def get_items_liked_by_user(training):
 	return items_liked_by_user_dict
 
 
-def compute_item_similarity(embedding_model,prop,items_liked_by_user,item_vec, num_of_items_liked):
+def compute_item_similarity(embedding_model,prop,items_liked_by_user,item, num_of_items_liked):
 
-	if len(item_vec) == 0: #if the item vec is not found, we do not consider it
+	avg_s = 0
 
-		return 0
-
-	else:
-
-		avg_s = 0
-
-		for past_item in items_liked_by_user:
-
-			#|(past_item)
-
-			past_item_vec = get_e2v_embedding_vector(embedding_model, past_item)
-
-			avg_s += similarity(past_item_vec,item_vec)/(num_of_items_liked)
+	for past_item in items_liked_by_user:
 
 
-		return avg_s
+		try:
+			avg_s += embedding_model.similarity(past_item,item)/(num_of_items_liked) #if an item is not found in the embeddings
+
+		except KeyError:
+
+			pass
+		
+	return avg_s
 
 
 
@@ -97,7 +124,7 @@ def feature_generator(embeddings, training, feature_file):
 
 			for i, line in enumerate(train):
 
-				if i > 4640: #resume previous calculation, don't want to start over
+				if i > 2765: #resume previous calculation, don't want to start over
 
 					line = line.split(' ')
 
@@ -120,17 +147,18 @@ def feature_generator(embeddings, training, feature_file):
 
 					#it can be considered as the first property
 
-					prop = 'user_item'
+					prop = 'feedback'
 
 					print(prop)
 
 					emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the embedding file into memory
 
-					user_vec = get_e2v_embedding_vector(emb, user)
+					try:
+						avg_s = emb.similarity(user,item)
 
-					item_vec = get_e2v_embedding_vector(emb, item)
+					except KeyError: #the item has never been liked by any user
+						avg_s = 0
 
-					avg_s = similarity(user_vec,item_vec)
 
 					file_write.write(' 1:%f ' %avg_s)
 
@@ -148,13 +176,13 @@ def feature_generator(embeddings, training, feature_file):
 
 						emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the property-embedding file into memory
 
-						item_vec = get_e2v_embedding_vector(emb, item)	#w.r.t to the current property
+						#item_vec = get_e2v_embedding_vector(emb, item)	#w.r.t to the current property
 
 						if prop == properties[-1]: #last element
 
 							print(prop)
 
-							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item_vec, num_of_items_liked)
+							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item, num_of_items_liked)
 
 							file_write.write(' %d:%f # %s\n' %(count,avg_sim,item))
 							
@@ -162,7 +190,7 @@ def feature_generator(embeddings, training, feature_file):
 
 							print(prop)
 
-							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item_vec, num_of_items_liked)
+							avg_sim = compute_item_similarity(emb,prop,items_liked_by_user,item, num_of_items_liked)
 
 							print(avg_sim)
 
