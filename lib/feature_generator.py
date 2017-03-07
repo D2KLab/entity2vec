@@ -1,54 +1,9 @@
-#from scorer import get_e2v_embedding
-#from sklearn.metrics.pairwise import cosine_similarity
 import optparse
 import os
 import codecs
 import collections
 import numpy as np
 from gensim.models import Word2Vec
-
-#def similarity(vec1,vec2):
-    
-    #compute cosine similarity or other similarities
-
-#	v1 = np.array(vec1)
-
-#	v2 = np.array(vec2)
-
-#	if len(v1)*len(v2) == 0: #any of the two is 0
-
-#		return 0
-
-#	else:
-
-#		return cosine_similarity([v1],[v2])[0][0] #returns a double array [[sim]]
-
-#def get_e2v_embedding_gensim(embedding):
-
-#	model = Word2Vec.load_word2vec_format(embedding_model, binary=True)
-
-#	return Word2Vec.load_word
-
-#def get_e2v_embedding_vector_gensim(embedding_model,ID):
-
-#	model = Word2Vec.load_word2vec_format(embedding_model, binary=False)
-
-#	return Word2Vec.load_word
-
-
-#def get_e2v_embedding_vector(embedding_model,ID):
-
-	#a = get_e2v_embedding(embedding_file)
-
-#	vec = embedding_model[embedding_model[0] == ID].values
-
-#	try:
-	
-#		return vec[0][1:]
-
-#	except IndexError:
-
-#		return []
 
 
 def get_e2v_embedding(embeddings_file):
