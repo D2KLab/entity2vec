@@ -67,9 +67,9 @@ def compute_item_similarity(embedding_model,prop,items_liked_by_user,item, num_o
 
 
 
-def feature_generator(embeddings, training, feature_file):
+def feature_generator(dataset, embedding_file, training, feature_file, offset):
 
-	properties = sorted(os.listdir(embeddings))[0:-1]  #we exclude the user-item, we treat it separately
+	properties = sorted(os.listdir('emb/'+dataset))[0:-1]  #we exclude the feedback, we treat it separately
 
 	with codecs.open(feature_file,'w', encoding='utf-8') as file_write:
 
@@ -79,7 +79,7 @@ def feature_generator(embeddings, training, feature_file):
 
 			for i, line in enumerate(train):
 
-				if i > 2765: #resume previous calculation, don't want to start over
+				if i > offset: #resume previous calculation, don't want to start over
 
 					line = line.split(' ')
 
@@ -106,7 +106,7 @@ def feature_generator(embeddings, training, feature_file):
 
 					print(prop)
 
-					emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the embedding file into memory
+					emb = get_e2v_embedding('emb/'+dataset+'/'+prop+'/'+embedding_file) #read the embedding file into memory
 
 					try:
 						avg_s = emb.similarity(user,item)
@@ -115,7 +115,7 @@ def feature_generator(embeddings, training, feature_file):
 						avg_s = 0
 
 
-					file_write.write(' 1:%f ' %avg_s)
+					file_write.write(' 1:%f' %avg_s)
 
 					count = 2
 
@@ -129,7 +129,7 @@ def feature_generator(embeddings, training, feature_file):
 
 					for prop in properties: #for each property
 
-						emb = get_e2v_embedding(embeddings+'/'+prop+'/'+os.listdir(embeddings+'/'+prop)[0]) #read the property-embedding file into memory
+						emb = get_e2v_embedding('emb/'+dataset+'/'+prop+'/'+embedding_file) #read the property-embedding file into memory
 
 						#item_vec = get_e2v_embedding_vector(emb, item)	#w.r.t to the current property
 
@@ -159,11 +159,13 @@ def feature_generator(embeddings, training, feature_file):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser()
-    parser.add_option('-e','--embeddings', dest = 'embeddings_folder', help = 'embeddings_folder')
+    parser.add_option('-d','--dataset', dest = 'dataset', help = 'dataset')
+    parser.add_option('-e','--embedding', dest = 'embedding_file', help = 'embeddings_file')
     parser.add_option('-o','--output', dest = 'feature_file', help = 'feature_file')
-    parser.add_option('-t','--training', dest = 'training_set', help = 'cutting threshold scorers')
+    parser.add_option('-t','--training', dest = 'training_set', help = 'training set')
+    parser.add_option('-s', '--offset', dest='offset', help='offset', type = int, default = -1)
 
 
     (options, args) = parser.parse_args()
 
-    feature_generator(options.embeddings_folder,options.training_set,options.feature_file)
+    feature_generator(options.dataset,options.embedding_file,options.training_set,options.feature_file, options.offset)
