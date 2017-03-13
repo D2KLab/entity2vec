@@ -73,7 +73,7 @@ def feature_generator(dataset, embedding_file, training, feature_file, offset):
 
 	property_file = read_json('config/properties.json')
 
-	properties = property_file[dataset]
+	properties = [i for i in property_file[dataset]]
 
 	#properties = ['dbo:director', 'dbo:starring', 'dbo:writer', 'dct:subject']
 
