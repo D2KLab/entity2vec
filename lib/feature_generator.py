@@ -4,7 +4,7 @@ import codecs
 import collections
 import numpy as np
 from gensim.models import Word2Vec
-
+from pandas import read_json
 
 def get_e2v_embedding(embeddings_file):
 
@@ -69,7 +69,13 @@ def compute_item_similarity(embedding_model,prop,items_liked_by_user,item, num_o
 
 def feature_generator(dataset, embedding_file, training, feature_file, offset):
 
-	properties = sorted(os.listdir('emb/'+dataset))[0:-1]  #we exclude the feedback, we treat it separately
+	#properties = sorted(os.listdir('emb/'+dataset))[0:-1]  #we exclude the feedback, we treat it separately
+
+	property_file = read_json('config/properties.json')
+
+	properties = property_file[dataset]
+
+	#properties = ['dbo:director', 'dbo:starring', 'dbo:writer', 'dct:subject']
 
 	with codecs.open(feature_file,'w', encoding='utf-8') as file_write:
 
