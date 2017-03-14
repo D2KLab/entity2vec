@@ -30,21 +30,23 @@ def get_items_liked_by_user(training):
 
 	items_liked_by_user_dict = collections.defaultdict(list)
 
-	for line in training:
+	with codecs.open(training,'r', encoding='utf-8') as train:
 
-		line = line.split(' ')
+		for line in train:
 
-		u = line[0]
+			line = line.split(' ')
 
-		item = line[1]
+			u = line[0]
 
-		relevance = int(line[2])
+			item = line[1]
 
-		if relevance >= 4: #only relevant items are used to compute the similarity
+			relevance = int(line[2])
 
-			items_liked_by_user_dict[u].append(item)
+			if relevance > 4: #only relevant items are used to compute the similarity
 
-	training.seek(0) #we can iterate in the file again
+				items_liked_by_user_dict[u].append(item)
+
+		#train.seek(0) #we can iterate in the file again
 
 	return items_liked_by_user_dict
 
@@ -54,7 +56,6 @@ def compute_item_similarity(embedding_model,prop,items_liked_by_user,item, num_o
 	avg_s = 0
 
 	for past_item in items_liked_by_user:
-
 
 		try:
 			avg_s += embedding_model.similarity(past_item,item)/(num_of_items_liked) #if an item is not found in the embeddings
@@ -67,23 +68,19 @@ def compute_item_similarity(embedding_model,prop,items_liked_by_user,item, num_o
 
 
 
-def feature_generator(dataset, embedding_file, training, feature_file, offset):
-
-	#properties = sorted(os.listdir('emb/'+dataset))[0:-1]  #we exclude the feedback, we treat it separately
+def feature_generator(dataset, embedding_file, training, test, feature_file, offset):
 
 	property_file = read_json('config/properties.json')
 
 	properties = [i for i in property_file[dataset]]
 
-	#properties = ['dbo:director', 'dbo:starring', 'dbo:writer', 'dct:subject']
+	items_liked_by_user_dict = get_items_liked_by_user(training) #dictionary [user] : [item1,item2,item3..itemn]
 
 	with codecs.open(feature_file,'w', encoding='utf-8') as file_write:
 
-		with codecs.open(training,'r', encoding='utf-8') as train:
+		with codecs.open(test,'r', encoding='utf-8') as test:
 
-			items_liked_by_user_dict = get_items_liked_by_user(train) #dictionary [user] : [item1,item2,item3..itemn]
-
-			for i, line in enumerate(train):
+			for i, line in enumerate(test):
 
 				if i > offset: #resume previous calculation, don't want to start over
 
@@ -170,8 +167,15 @@ if __name__ == '__main__':
     parser.add_option('-o','--output', dest = 'feature_file', help = 'feature_file')
     parser.add_option('-t','--training', dest = 'training_set', help = 'training set')
     parser.add_option('-s', '--offset', dest='offset', help='offset', type = int, default = -1)
+    parser.add_option('-k', '--test', dest='test_set', help='test set file', default = False)
 
 
     (options, args) = parser.parse_args()
 
-    feature_generator(options.dataset,options.embedding_file,options.training_set,options.feature_file, options.offset)
+    if options.test_set: #if a test set is specified, then the past items are read from the training and the test feature file is written
+
+    	feature_generator(options.dataset,options.embedding_file,options.training_set,options.test_set,options.feature_file, options.offset)
+
+    else: #otherwise we are writing the feature for the training itself
+
+    	feature_generator(options.dataset,options.embedding_file,options.training_set,options.training_set,options.feature_file, options.offset)
