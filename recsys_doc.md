@@ -40,10 +40,10 @@ java -jar RankLib-2.1-patched.jar -train training_feature_file -test test_featur
 
 1) Generate recommendations
 
-java -jar RankLib-2.1-patched.jar -load model -rank test_feature_file -norm sum -score recommendations.txt
+java -jar RankLib-2.1-patched.jar -load model -rank test_feature_file -score recommendations.txt
 
 sort recommendations.txt
 
 2) Evaluate recommendations
 
-java -jar RankLib-2.1-patched.jar -load model -test test_feature_file -norm sum -metric metric
+java -jar RankLib-2.1-patched.jar -load model -test test_feature_file -metric metric
