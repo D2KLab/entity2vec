@@ -43,8 +43,11 @@ def parse_args():
 
 	parser.add_argument('--directed', dest='directed', action='store_true',
 	                    help='Graph is (un)directed. Default is directed.')
-	parser.add_argument('--undirected', dest='undirected', action='store_false')
-	parser.set_defaults(directed=True)
+	parser.set_defaults(directed=False)
+
+	parser.add_argument('--no_preprocessing', dest = 'preprocessing', action='store_false',
+	                    help='Whether preprocess all transition probabilities or compute on the fly')
+	parser.set_defaults(preprocessing=True)
 
 	return parser.parse_args()
 
@@ -75,22 +78,33 @@ def main(args):
 
 	start_time = time.time()
 
-	print 'Parameters:\n'
+	print('Parameters:\n')
 
-	print 'p = %f\n' %args.p
+	print('p = %f\n' %args.p)
 
-	print 'q = %f\n' %args.q
+	print('q = %f\n' %args.q)
 
-	print 'num walks = %d\n' %args.num_walks
+	print('num walks = %d\n' %args.num_walks)
 
 	nx_G = read_graph()
-	print 'read graph'
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
-	print 'defined G'
-	G.preprocess_transition_probs()
-	print 'preprocessed'
+	print('read graph')
+
+	#G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	#print 'defined G'
+
+	G = node2vec.Graph(nx_G, args.directed, args.p, args.q, args.preprocessing)
+	print('defined G')
+
+	#print(G.preprocessing)
+
+	if G.preprocessing:
+		G.preprocess_transition_probs()
+		print('preprocessed')
+
+	#G.preprocess_transition_probs()
+	#print 'preprocessed'
 	G.simulate_walks(args.num_walks, args.walk_length, args.output, args.p, args.q)
-	print 'defined walk'
+	print('defined walk')
 
 	print("--- %s seconds ---" % (time.time() - start_time))
 
