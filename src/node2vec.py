@@ -7,37 +7,94 @@ import gzip
 
 class Graph():
 	
-	def __init__(self, nx_G, is_directed, p, q):
+	def __init__(self, nx_G, is_directed, p, q, preprocessing):
 		self.G = nx_G
 		self.is_directed = is_directed
 		self.p = p
 		self.q = q
+		self.preprocessing = preprocessing
+
 
 	def node2vec_walk(self, walk_length, start_node):
 		'''
 		Simulate a random walk starting from start node.
 		'''
 		G = self.G
-		alias_nodes = self.alias_nodes
-		alias_edges = self.alias_edges
 
 		walk = [start_node]
 
 		while len(walk) < walk_length:
+
 			cur = walk[-1]
 			cur_nbrs = sorted(G.neighbors(cur))
+
 			if len(cur_nbrs) > 0:
-				if len(walk) == 1:
-					walk.append(cur_nbrs[alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
+
+				if self.preprocessing:
+
+					alias_nodes = self.alias_nodes
+					alias_edges = self.alias_edges
+
+					if len(walk) == 1: #first step of the walk, no previous node
+
+						walk.append(cur_nbrs[alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
+
+					else:
+						prev = walk[-2]
+
+						next_node = cur_nbrs[alias_draw(alias_edges[(prev, cur)][0], 
+							alias_edges[(prev, cur)][1])]
+
+						walk.append(next_node)
+
 				else:
-					prev = walk[-2]
-					next = cur_nbrs[alias_draw(alias_edges[(prev, cur)][0], 
-						alias_edges[(prev, cur)][1])]
-					walk.append(next)
+
+					p = self.p
+					q = self.q
+					G = self.G
+
+					unnormalized_probs = []
+
+					if len(walk) == 1: #first step of the walk, no previous node
+
+						for dst_nbr in cur_nbrs:
+
+							unnormalized_probs.append(G[cur][dst_nbr]['weight'])
+
+						norm_const = sum(unnormalized_probs)
+
+						normalized_probs =  [float(u_prob)/norm_const for u_prob in unnormalized_probs]
+
+						next_node = cur_nbrs[np.random.multinomial(1,normalized_probs).argmax()]
+
+						walk.append(next_node)
+
+					else:
+
+						prev = walk[-2]
+
+						for dst_nbr in cur_nbrs:
+
+							if dst_nbr == prev:
+
+								unnormalized_probs.append(G[cur][dst_nbr]['weight']/p)
+
+							elif G.has_edge(dst_nbr, prev):
+								unnormalized_probs.append(G[cur][dst_nbr]['weight'])
+							else:
+								unnormalized_probs.append(G[cur][dst_nbr]['weight']/q)
+
+						norm_const = sum(unnormalized_probs)
+						normalized_probs =  [float(u_prob)/norm_const for u_prob in unnormalized_probs]
+
+						next_node = cur_nbrs[np.random.multinomial(1,normalized_probs).argmax()]
+
+						walk.append(next_node)
 			else:
 				break
 
 		return walk
+
 
 	def simulate_walks(self, num_walks, walk_length, output, p, q):
 		'''
@@ -45,7 +102,7 @@ class Graph():
 		'''
 		G = self.G
 
-		nodes = list(G.nodes())
+		nodes = G.nodes()
 		print 'Walk iteration:'
 
 		with gzip.open('walks/%s' %output,'w') as walks_file:
