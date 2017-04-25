@@ -1,3 +1,4 @@
+from __future__ import print_function
 from SPARQLWrapper import SPARQLWrapper, JSON
 import optparse
 import codecs
@@ -5,7 +6,9 @@ import codecs
 
 def get_property_graphs(entities, properties, folder, output_folder):
 
-	with codecs.open('%s/%s'%(folder,entities),'r', encoding='utf-8') as f: #open entity file, select only those entities
+	sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+	if entities == "all":
 
 		with codecs.open('%s/%s'%(folder,properties),'r', encoding='utf-8') as p: #open property file, select only those properties
 
@@ -13,54 +16,78 @@ def get_property_graphs(entities, properties, folder, output_folder):
 
 				prop = prop.strip('\n')
 
-				print prop
+				print(prop)
 
 				with codecs.open('%s/%s/%s' %(folder, output_folder, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
-					for uri in f: #for each entity
+					sparql.setQuery("""
+				     SELECT ?s ?o  WHERE {
+				     ?s %s ?o.
+				     }""" %(prop,uri))
 
-						print uri
+					sparql.setReturnFormat(JSON)
 
-						sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+					for result in sparql.query().convert()['results']['bindings']:
 
-						uri = uri.strip('\n')
+						subj = result['s']['value']
 
-						#uri = uri.encode('utf8')
+						obj = result['o']['value']
 
-						uri = '<'+uri+'>'
+						print(subj, obj)
 
-						sparql.setQuery("""
-					     SELECT ?s ?o  WHERE {
-					     ?s %s ?o.
-					     FILTER (?s = %s) }""" %(prop,uri))
+						prop_graph.write('%s %s\n' %(subj, obj)) 
 
-						sparql.setReturnFormat(JSON)
+	else:
 
-						for result in sparql.query().convert()['results']['bindings']:
+		with codecs.open('%s/%s'%(folder,entities),'r', encoding='utf-8') as f: #open entity file, select only those entities
 
-							subj = result['s']['value']
+			with codecs.open('%s/%s'%(folder,properties),'r', encoding='utf-8') as p: #open property file, select only those properties
 
-							#subj = subj.encode('utf8')
+				for prop in p: #iterate on the properties
 
-							obj = result['o']['value']
+					prop = prop.strip('\n')
 
-							#obj = obj.encode('utf8')
+					print(prop)
 
-							print subj, obj
+					with codecs.open('%s/%s/%s' %(folder, output_folder, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
-							prop_graph.write('%s %s\n' %(subj, obj)) 
+						for uri in f: #for each entity
 
-					f.seek(0) #reinitialize iterator
+							print(uri)
+
+							sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+							uri = uri.strip('\n')
+
+							uri = '<'+uri+'>'
+
+							sparql.setQuery("""
+						     SELECT ?s ?o  WHERE {
+						     ?s %s ?o.
+						     FILTER (?s = %s) }""" %(prop,uri))
+
+							sparql.setReturnFormat(JSON)
+
+							for result in sparql.query().convert()['results']['bindings']:
+
+								subj = result['s']['value']
+
+								obj = result['o']['value']
+
+								print(subj, obj)
+
+								prop_graph.write('%s %s\n' %(subj, obj)) 
+
+						f.seek(0) #reinitialize iterator
 
 	return 
-
 
 
 
 if __name__ == '__main__':
 
     parser = optparse.OptionParser()
-    parser.add_option('-e','--entities', dest = 'entity_file', help = 'entity file name')
+    parser.add_option('-e','--entities', dest = 'entity_file', help = 'entity file name', default = 'all')
     parser.add_option('-p','--properties', dest = 'property_file', help = 'property file name')
     parser.add_option('-f','--folder', dest = 'folder', help = 'property file name')
     parser.add_option('-o','--output', dest = 'output_folder', help = 'property file name')
