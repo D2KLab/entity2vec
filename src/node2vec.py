@@ -6,8 +6,6 @@ import gzip
 import time
 import argparse
 from gensim.models import Word2Vec
-from multiprocessing import Pool
-from chunks import chunks
 
 class node2vec(object):
 	
