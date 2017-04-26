@@ -140,7 +140,7 @@ class entity2vec(node2vec):
 								wrapper.setQuery("""
 							     SELECT ?s ?o  WHERE {
 							     ?s %s ?o.
-							     FILTER (?s = %s)}""" %(uri,prop))
+							     FILTER (?s = %s)}""" %(prop,uri))
 
 								wrapper.setReturnFormat(JSON)
 
