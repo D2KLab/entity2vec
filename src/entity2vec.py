@@ -27,7 +27,7 @@ class entity2vec(node2vec):
 
 		self._define_properties()
 
-	#we assume that the graphs have been downloaded and stored in dataset/graphs
+
 	def _define_properties(self):
 
 		property_file = read_json(self.config_file)
@@ -48,7 +48,7 @@ class entity2vec(node2vec):
 			
 				onlyfiles = [f for f in listdir('datasets/%s/graphs/%s') if isfile(join(mypath, f))]
 
-				self.properties = [file.strip('.ttl') for file in onlyfiles]
+				self.properties = [file.strip('.edgelist') for file in onlyfiles]
 
 
 	def e2v_walks_learn(self):
@@ -78,7 +78,7 @@ class entity2vec(node2vec):
 
 		for prop_name in self.properties:
 
-			graph = "datasets/%s/graphs/%s.ttl" %(self.dataset, prop_name)
+			graph = "datasets/%s/graphs/%s.edgelist" %(self.dataset, prop_name)
 
 			try:
 
