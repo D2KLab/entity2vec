@@ -49,6 +49,8 @@ class entity2vec(node2vec):
 
 				self.get_all_properties()
 
+				self.properties.append('feedback') #add the feedback property that is not defined in the graph
+
 			else: #get everything you have in the folder
 			
 				onlyfiles = [f for f in listdir('datasets/%s/graphs/%s') if isfile(join(mypath, f))]
