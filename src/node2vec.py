@@ -181,7 +181,14 @@ class node2vec(object):
 			print(str(walk_iter+1), '/', str(self.num_walks))
 			random.shuffle(nodes)
 
+			c = 1
+
 			for node in nodes:
+
+				if c%10001 == 0:
+					print('Processed %d nodes'%c)
+
+				c += 1
 
 				yield self.node2vec_walk(start_node=node)
 
