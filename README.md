@@ -14,7 +14,7 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 
 Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.ttl) and Linked Open Data information (movielens_1m/graphs/) on the Movielens 1M dataset.
 
-python src/entity2vec.py
+  python src/entity2vec.py
 
 
 ## Entity classification
@@ -23,10 +23,10 @@ python src/entity2vec.py
 
 1) Run node2vec on the whole graph to create a single global embedding of the entity
 
-python src/node2vec.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.emd  --p 1 --q 4
+  python src/node2vec.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.emd  --p 1 --q 4
 
 2) Obtain scores, e.g.:
 
-cd ml
+  cd ml
 
-python rdf_predict.py --dataset aifb --emb ../emb/aifb_p1_q4.emd --dimension 500
+  python rdf_predict.py --dataset aifb --emb ../emb/aifb_p1_q4.emd --dimension 500
