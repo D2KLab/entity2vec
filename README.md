@@ -12,7 +12,7 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 
 ## Property-specific entity embeddings
 
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.ttl) and Linked Open Data information (movielens_1m/graphs/) on the Movielens 1M dataset.
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset.
 
   python src/entity2vec.py
 
