@@ -80,9 +80,10 @@ class entity2vec(node2vec):
 
 		wrapper = SPARQLWrapper(self.sparql)
 
-		if self.entities == "all": #select all the entities
+		properties = self.properties
+		properties.remove('feedback') #don't query for the feedback property
 
-			properties = self.properties.remove('feedback') #don't query for the feedback property
+		if self.entities == "all": #select all the entities
 
 			for prop in properties: #iterate on the properties
 
