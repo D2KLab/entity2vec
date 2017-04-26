@@ -303,7 +303,7 @@ class node2vec(object):
 		parser.add_argument('--dimensions', type=int, default=500,
 		                    help='Number of dimensions. Default is 128.')
 
-		parser.add_argument('--window-size', type=int, default=10,
+		parser.add_argument('--window-size', type=int, default=5,
 	                    	help='Context size for optimization. Default is 10.')
 
 		parser.add_argument('--iter', default=5, type=int,
@@ -320,6 +320,8 @@ class node2vec(object):
 	def run(self, input_graph, output):
 
 		self.read_graph(input_graph)
+
+		print('read G')
 
 		if self.preprocessing:
 			self.preprocess_transition_probs()
@@ -352,7 +354,7 @@ if __name__ == '__main__':
 
 	print('directed = %s\n' %args.directed)
 
-	print('no_preprocessing = %s\n' %args.preprocessing)
+	print('preprocessing = %s\n' %args.preprocessing)
 
 	print('dimensions = %s\n' %args.dimensions)
 
@@ -360,11 +362,7 @@ if __name__ == '__main__':
 
 	print('window size = %s\n' %args.window_size)
 
-	print('dimensions = %s\n' %args.dimensions)
-
 	node2vec_graph = node2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter)
-
-	print('defined G')
 
 	node2vec_graph.run(args.input, args.output)
 
