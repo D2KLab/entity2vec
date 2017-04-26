@@ -369,6 +369,8 @@ if __name__ == '__main__':
 
 	print('window size = %s\n' %args.window_size)
 
+	print('workers = %s\n' %args.workers)
+
 	node2vec_graph = node2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter)
 
 	node2vec_graph.run(args.input, args.output)
