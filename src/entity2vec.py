@@ -41,7 +41,7 @@ class entity2vec(node2vec):
 		try:
 
 			self.properties = [i for i in property_file[self.dataset]]
-
+			self.properties.append('feedback')
 
 		except KeyError: #if no list of properties is specified, take them all
 
@@ -82,7 +82,9 @@ class entity2vec(node2vec):
 
 		if self.entities == "all": #select all the entities
 
-			for prop in self.properties: #iterate on the properties
+			properties = self.properties.remove('feedback') #don't query for the feedback property
+
+			for prop in properties: #iterate on the properties
 
 				print(prop)
 
@@ -98,7 +100,7 @@ class entity2vec(node2vec):
 					wrapper.setQuery("""
 				     SELECT ?s ?o  WHERE {
 				     ?s %s ?o.
-				     }""" %(prop,uri))
+				     }""" %prop)
 
 					wrapper.setReturnFormat(JSON)
 
@@ -116,7 +118,7 @@ class entity2vec(node2vec):
 
 			with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f: #open entity file, select only those entities
 
-					for prop in self.properties: #iterate on the properties
+					for prop in properties: #iterate on the properties
 
 						print(prop)
 
@@ -131,8 +133,6 @@ class entity2vec(node2vec):
 
 							for uri in f: #for each entity
 
-								print(uri)
-
 								uri = uri.strip('\n')
 
 								uri = '<'+uri+'>'
@@ -140,7 +140,7 @@ class entity2vec(node2vec):
 								wrapper.setQuery("""
 							     SELECT ?s ?o  WHERE {
 							     ?s %s ?o.
-							     FILTER (?s = %s) }""" %(prop,uri))
+							     FILTER (?s = %s)}""" %(uri,prop))
 
 								wrapper.setReturnFormat(JSON)
 
