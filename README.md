@@ -19,6 +19,8 @@ Compute user and item embeddings from a Knowledge Graph encompassing both user f
 
 ## Entity classification
 
+Generate unique vector representation for an entity, without considering the role of semantic properties, to use in classification tasks.
+
 0) Create empty directory called emb
 
 1) Run node2vec on the whole graph to create a single global embedding of the entity
