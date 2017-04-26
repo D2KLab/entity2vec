@@ -12,7 +12,8 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 
 ## Property-specific entity embeddings
 
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset.
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset. The set of properties can be defined in the configuration file config/properties.json, otherwise the software will run on each file that is located in datasets/your_dataset/graphs. Using the argument --sparql it is also possible to query a sparql endpoint to download the graphs in datasets/your_dataset/graphs.
+
 ```
   python src/entity2vec.py
 ```
