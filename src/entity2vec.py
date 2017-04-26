@@ -3,19 +3,21 @@ import numpy as np
 import networkx as nx
 import random
 import node2vec
-from pandas import read_json
+import json
 from os.path import isfile, join
 from os import mkdir
 import argparse
 import sparql
 from node2vec import node2vec
 import time
+import codecs
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 #Generates property-speficic entity embeddings from a Knowledge Graph
 
 class entity2vec(node2vec):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities):
 
 		node2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations)
 
@@ -25,12 +27,16 @@ class entity2vec(node2vec):
 
 		self.dataset = dataset
 
+		self.entities = entities
+
 		self._define_properties()
 
 
 	def _define_properties(self):
 
-		property_file = read_json(self.config_file)
+		with codecs.open(self.config_file, 'r', encoding = 'utf-8') as config_read:
+
+			property_file = json.loads(config_read.read())
 
 		try:
 
@@ -41,14 +47,115 @@ class entity2vec(node2vec):
 
 			if self.sparql: #get all the properties from the sparql endpoint
 
-				#TODO				
-				pass
+				self.get_all_properties()
 
-			else:
+			else: #get everything you have in the folder
 			
 				onlyfiles = [f for f in listdir('datasets/%s/graphs/%s') if isfile(join(mypath, f))]
 
 				self.properties = [file.strip('.edgelist') for file in onlyfiles]
+
+
+	def _get_all_properties(self): #get all the properties from sparql endpoint if a list is not provided in config file
+
+		wrapper = SPARQLWrapper(self.sparql)
+
+		self.properties = []
+
+		wrapper.setQuery("""
+				     SELECT ?p WHERE {
+				     ?s ?p ?o.
+				     }""")
+
+		wrapper.setReturnFormat(JSON)
+
+		for result in wrapper.query().convert()['results']['bindings']:
+
+			self.properties.append(results['p']['value'])
+
+
+	def get_property_graphs(self):
+
+		wrapper = SPARQLWrapper(self.sparql)
+
+		if self.entities == "all": #select all the entities
+
+			for prop in self.properties: #iterate on the properties
+
+				print(prop)
+
+				try:
+
+					mkdir('datasets/%s/graphs' %(self.dataset))
+
+				except:
+					pass
+
+				with codecs.open('datasets/%s/graphs/%s' %(self.dataset, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
+
+					wrapper.setQuery("""
+				     SELECT ?s ?o  WHERE {
+				     ?s %s ?o.
+				     }""" %(prop,uri))
+
+					wrapper.setReturnFormat(JSON)
+
+					for result in wrapper.query().convert()['results']['bindings']:
+
+						subj = result['s']['value']
+
+						obj = result['o']['value']
+
+						print(subj, obj)
+
+						prop_graph.write('%s %s\n' %(subj, obj)) 
+
+		else: # a file is provided
+
+			with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f: #open entity file, select only those entities
+
+					for prop in self.properties: #iterate on the properties
+
+						print(prop)
+
+						try:
+
+							mkdir('datasets/%s/graphs' %(self.dataset))
+
+						except:
+							pass					
+
+						with codecs.open('datasets/%s/graphs/%s' %(self.dataset, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
+
+							for uri in f: #for each entity
+
+								print(uri)
+
+								uri = uri.strip('\n')
+
+								uri = '<'+uri+'>'
+
+								wrapper.setQuery("""
+							     SELECT ?s ?o  WHERE {
+							     ?s %s ?o.
+							     FILTER (?s = %s) }""" %(prop,uri))
+
+								wrapper.setReturnFormat(JSON)
+
+								for result in wrapper.query().convert()['results']['bindings']:
+
+									subj = result['s']['value']
+
+									obj = result['o']['value']
+
+									print(subj, obj)
+
+									prop_graph.write('%s %s\n' %(subj, obj)) 
+
+							f.seek(0) #reinitialize iterator
+
+		return 
+
 
 
 	def e2v_walks_learn(self):
@@ -96,9 +203,8 @@ class entity2vec(node2vec):
 	def run(self):
 
 		if self.sparql:
-			#TODO: add query to sparql endpoint 
 
-			pass
+			self.get_property_graphs()
 
 		self.e2v_walks_learn() #run node2vec for each property-specific graph
 
@@ -156,9 +262,13 @@ class entity2vec(node2vec):
 		parser.add_argument('--dataset', nargs='?', default='movielens_1m',
 		                    help='Dataset')
 
-		parser.add_argument('--sparql', dest = 'sparql', action='store_true',
+		parser.add_argument('--sparql', dest = 'sparql',
 		                    help='Whether downloading the graphs from a sparql endpoint')
 		parser.set_defaults(sparql=False)		
+
+		parser.add_argument('--entities', dest = 'entities', default = "all",
+		                    help='A specific list of entities for which the embeddings have to be computed')
+
 
 		return parser.parse_args()
 
@@ -199,7 +309,9 @@ if __name__ == '__main__':
 
 	print('dataset = %s\n' %args.dataset)
 
-	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset)
+	print('entities = %s\n' %args.entities)
+
+	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities)
 
 	e2v.run()
 
