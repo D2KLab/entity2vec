@@ -2,69 +2,91 @@ from __future__ import print_function
 from SPARQLWrapper import SPARQLWrapper, JSON
 import optparse
 import codecs
+from os import mkdir
+
 
 class sparql(object):
 
-	def __init__ (self, entities, properties, folder, output_folder, endpoint):
+	def __init__ (self, entities, properties, dataset, endpoint, default_graph):
 
-		self.entities = entities
+		self.entities = entities #file containing a list of entities
 
-		self.folder = folder
-
-		self.output_folder = output_folder
+		self.dataset = dataset
 
 		self.wrapper = SPARQLWrapper(endpoint)
 
+		if default_graph:
+
+			self.default_graph = default_graph
+
+			self.wrapper.addDefaultGraph(self.default_graph)
+
 		if properties == "all":
 
-			self._get_all_properties()
+			self.get_all_properties()
 
 		else:
-			self.properties = []
 
-			for p in codecs.open('%s/%s'%(folder,properties),'r', encoding='utf-8'):
+			self.properties = properties
 
-				self.properties.append(p.strip('\n'))
+		self.query_all_prop = "SELECT ?p WHERE {?s ?p ?o.}"
+
+		self.query_prop = "SELECT ?s ?o  WHERE {?s %s ?o. }"
+
+		self.query_prop_uri = "SELECT ?s ?o  WHERE {?s %s ?o. FILTER (?s = %s)}"
 
 
-	def _get_all_properties(self): #get all the properties if a list is not provided
 
-		wrapper = self.wrapper
+	def get_all_properties(self): #get all the properties from sparql endpoint if a list is not provided in config file
 
 		self.properties = []
 
-		wrapper.setQuery("""
-				     SELECT ?p WHERE {
-				     ?s ?p ?o.
-				     }""")
+		self.wrapper.setQuery(self.query_all_prop)
 
-		wrapper.setReturnFormat(JSON)
+		self.wrapper.setReturnFormat(JSON)
 
-		for result in wrapper.query().convert()['results']['bindings']:
+		for result in self.wrapper.query().convert()['results']['bindings']:
 
 			self.properties.append(results['p']['value'])
+
+		return self.properties
+
 
 
 	def get_property_graphs(self):
 
-		wrapper = self.wrapper
+		properties = self.properties
 
-		if self.entities == "all":
+		if 'feedback' in properties:
+			properties.remove('feedback') #don't query for the feedback property
 
-			for prop in self.properties: #iterate on the properties
+		if self.entities == "all": #select all the entities
+
+			for prop in properties: #iterate on the properties
+
+				prop_short = prop
+
+				if '/' in prop:
+					prop_short = prop.split('/')[-1]
+
+					prop_short = prop_short[0:-1]
 
 				print(prop)
 
-				with codecs.open('%s/%s/%s' %(folder, output_folder, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
+				try:
+					mkdir('datasets/%s/'%(self.dataset))
+					mkdir('datasets/%s/graphs' %(self.dataset))
 
-					wrapper.setQuery("""
-				     SELECT ?s ?o  WHERE {
-				     ?s %s ?o.
-				     }""" %(prop,uri))
+				except:
+					pass
 
-					wrapper.setReturnFormat(JSON)
+				with codecs.open('datasets/%s/graphs/%s.edgelist' %(self.dataset, prop_short),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
-					for result in wrapper.query().convert()['results']['bindings']:
+					self.wrapper.setQuery(self.query_prop%prop)
+
+					self.wrapper.setReturnFormat(JSON)
+
+					for result in self.wrapper.query().convert()['results']['bindings']:
 
 						subj = result['s']['value']
 
@@ -74,32 +96,44 @@ class sparql(object):
 
 						prop_graph.write('%s %s\n' %(subj, obj)) 
 
-		else:
+		else: # a file is provided
 
-			with codecs.open('%s/%s'%(self.folder,self.entities),'r', encoding='utf-8') as f: #open entity file, select only those entities
+			with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f: #open entity file, select only those entities
 
-					for prop in self.properties: #iterate on the properties
+					for prop in properties: #iterate on the properties
+
+
+						prop_short = prop
+
+						if '/' in prop:
+
+							prop_short = prop.split('/')[-1]
+
+							prop_short = prop_short[0:-1]
+
 
 						print(prop)
 
-						with codecs.open('%s/%s/%s' %(self.folder, self.output_folder, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
+						try:
+							mkdir('datasets/%s/'%(self.dataset))
+							mkdir('datasets/%s/graphs' %(self.dataset))
+
+						except:
+							pass					
+
+						with codecs.open('datasets/%s/graphs/%s.edgelist' %(self.dataset, prop_short),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
 							for uri in f: #for each entity
-
-								print(uri)
 
 								uri = uri.strip('\n')
 
 								uri = '<'+uri+'>'
 
-								wrapper.setQuery("""
-							     SELECT ?s ?o  WHERE {
-							     ?s %s ?o.
-							     FILTER (?s = %s) }""" %(prop,uri))
+								self.wrapper.setQuery(self.query_prop_uri%(prop,uri))
 
-								wrapper.setReturnFormat(JSON)
+								self.wrapper.setReturnFormat(JSON)
 
-								for result in wrapper.query().convert()['results']['bindings']:
+								for result in self.wrapper.query().convert()['results']['bindings']:
 
 									subj = result['s']['value']
 
@@ -118,12 +152,14 @@ if __name__ == '__main__':
 
     parser = optparse.OptionParser()
     parser.add_option('-e','--entities', dest = 'entity_file', help = 'entity file name', default = 'all')
-    parser.add_option('-p','--properties', dest = 'property_file', help = 'property file name', default = 'all')
-    parser.add_option('-f','--folder', dest = 'folder', help = 'folder')
-    parser.add_option('-o','--output', dest = 'output_folder', help = 'output folder')
+    parser.add_option('-p','--properties', dest = 'properties', help = 'property_file', default = 'all')
+    parser.add_option('-k','--dataset', dest = 'dataset', help = 'dataset')
     parser.add_option('-e','--endpoint', dest = 'endpoint', help = 'sparql endpoint')
+    parser.add_option('-d', '--default_graph', dest = 'default_graph', help = 'default graph', default = False)
 
 
     (options, args) = parser.parse_args()
 
-    get_property_graphs(options.entity_file, options.property_file, options.folder, options.output_folder, options.endpoint)
+    sparql_query = sparql(options.entity_file, options.properties, options.dataset, options.endpoint, options.default_graph)
+
+    sparql_query.get_property_graphs()
