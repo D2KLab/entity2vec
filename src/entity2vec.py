@@ -7,23 +7,25 @@ import json
 from os.path import isfile, join
 from os import mkdir
 import argparse
-import sparql
 from node2vec import node2vec
 import time
 import codecs
 from SPARQLWrapper import SPARQLWrapper, JSON
+from sparql import sparql
 
 #Generates property-speficic entity embeddings from a Knowledge Graph
 
 class entity2vec(node2vec):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph):
 
 		node2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations)
 
 		self.config_file = config
 
 		self.sparql = sparql
+
+		self.default_graph = default_graph
 
 		self.dataset = dataset
 
@@ -47,7 +49,9 @@ class entity2vec(node2vec):
 
 			if self.sparql: #get all the properties from the sparql endpoint
 
-				self.get_all_properties()
+				sparql_query = sparql(self.entities, "all", self.dataset, self.sparql, self.default_graph)
+
+				self.properties = sparql_query.get_all_properties()
 
 				self.properties.append('feedback') #add the feedback property that is not defined in the graph
 
@@ -56,108 +60,6 @@ class entity2vec(node2vec):
 				onlyfiles = [f for f in listdir('datasets/%s/graphs/%s') if isfile(join(mypath, f))]
 
 				self.properties = [file.strip('.edgelist') for file in onlyfiles]
-
-
-	def _get_all_properties(self): #get all the properties from sparql endpoint if a list is not provided in config file
-
-		wrapper = SPARQLWrapper(self.sparql)
-
-		self.properties = []
-
-		wrapper.setQuery("""
-				     SELECT ?p WHERE {
-				     ?s ?p ?o.
-				     }""")
-
-		wrapper.setReturnFormat(JSON)
-
-		for result in wrapper.query().convert()['results']['bindings']:
-
-			self.properties.append(results['p']['value'])
-
-
-	def get_property_graphs(self):
-
-		wrapper = SPARQLWrapper(self.sparql)
-
-		properties = self.properties
-		properties.remove('feedback') #don't query for the feedback property
-
-		if self.entities == "all": #select all the entities
-
-			for prop in properties: #iterate on the properties
-
-				print(prop)
-
-				try:
-
-					mkdir('datasets/%s/graphs' %(self.dataset))
-
-				except:
-					pass
-
-				with codecs.open('datasets/%s/graphs/%s' %(self.dataset, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
-
-					wrapper.setQuery("""
-				     SELECT ?s ?o  WHERE {
-				     ?s %s ?o.
-				     }""" %prop)
-
-					wrapper.setReturnFormat(JSON)
-
-					for result in wrapper.query().convert()['results']['bindings']:
-
-						subj = result['s']['value']
-
-						obj = result['o']['value']
-
-						print(subj, obj)
-
-						prop_graph.write('%s %s\n' %(subj, obj)) 
-
-		else: # a file is provided
-
-			with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f: #open entity file, select only those entities
-
-					for prop in properties: #iterate on the properties
-
-						print(prop)
-
-						try:
-
-							mkdir('datasets/%s/graphs' %(self.dataset))
-
-						except:
-							pass					
-
-						with codecs.open('datasets/%s/graphs/%s' %(self.dataset, prop),'w', encoding='utf-8') as prop_graph: #open a property file graph
-
-							for uri in f: #for each entity
-
-								uri = uri.strip('\n')
-
-								uri = '<'+uri+'>'
-
-								wrapper.setQuery("""
-							     SELECT ?s ?o  WHERE {
-							     ?s %s ?o.
-							     FILTER (?s = %s)}""" %(prop,uri))
-
-								wrapper.setReturnFormat(JSON)
-
-								for result in wrapper.query().convert()['results']['bindings']:
-
-									subj = result['s']['value']
-
-									obj = result['o']['value']
-
-									print(subj, obj)
-
-									prop_graph.write('%s %s\n' %(subj, obj)) 
-
-							f.seek(0) #reinitialize iterator
-
-		return 
 
 
 
@@ -188,16 +90,24 @@ class entity2vec(node2vec):
 
 		for prop_name in self.properties:
 
-			graph = "datasets/%s/graphs/%s.edgelist" %(self.dataset, prop_name)
+			prop_short = prop_name
+
+			if '/' in prop_name:
+
+				prop_short = prop_name.split('/')[-1]
+
+				prop_short = prop_short[0:-1]
+
+			graph = "datasets/%s/graphs/%s.edgelist" %(self.dataset, prop_short)
 
 			try:
 
-				mkdir('emb/%s/%s' %(self.dataset,prop_name))
+				mkdir('emb/%s/%s' %(self.dataset,prop_short))
 
 			except:
 				pass
 
-			emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" %(self.dataset, prop_name, n, p, q, l, d, it, win)
+			emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" %(self.dataset, prop_short, n, p, q, l, d, it, win)
 
 			super(entity2vec, self).run(graph,emb_output) #call the run function defined in parent class node2vec
 
@@ -207,7 +117,9 @@ class entity2vec(node2vec):
 
 		if self.sparql:
 
-			self.get_property_graphs()
+			sparql_query = sparql(self.entities, self.properties, self.dataset, self.sparql, self.default_graph)
+
+			sparql_query.get_property_graphs()
 
 		self.e2v_walks_learn() #run node2vec for each property-specific graph
 
@@ -273,6 +185,9 @@ class entity2vec(node2vec):
 		                    help='A specific list of entities for which the embeddings have to be computed')
 
 
+		parser.add_argument('--default_graph', dest = 'default_graph', default = False,
+		                    help='Default graph to query when using a Sparql endpoint')
+
 		return parser.parse_args()
 
 
@@ -314,7 +229,9 @@ if __name__ == '__main__':
 
 	print('entities = %s\n' %args.entities)
 
-	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities)
+	print('default graph = %s\n' %args.default_graph)
+
+	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph)
 
 	e2v.run()
 
