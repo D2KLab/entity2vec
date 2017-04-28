@@ -6,6 +6,7 @@ import node2vec
 import json
 from os.path import isfile, join
 from os import mkdir
+from os import listdir
 import argparse
 from node2vec import node2vec
 import time
@@ -61,6 +62,9 @@ class entity2vec(node2vec):
 
 				self.properties = [file.strip('.edgelist') for file in onlyfiles]
 
+				if 'feedback' in self.properties: #feedback property always the last one of the list
+					self.properties.remove('feedback')
+					self.properties.append('feedback')
 
 
 	def e2v_walks_learn(self):
