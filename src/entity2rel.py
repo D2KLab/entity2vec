@@ -2,7 +2,7 @@ from gensim.models import Word2Vec
 import argparse
 from gensim.models.keyedvectors import KeyedVectors
 
-#return a set of similarity scores 
+#return a similarity score
 
 class entity2rel(object):
 
@@ -59,3 +59,8 @@ if __name__ == '__main__':
 	s = rel.similarity(uri1, uri3)
 	print(s)
 	print('\n')
+
+	print("Most similar entities to Pulp Fiction are:\n")
+
+	for i in rel.embedding.most_similar(positive=[uri1]):
+		print(i)
