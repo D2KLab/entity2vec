@@ -1,26 +1,40 @@
+from __future__ import print_function
 from gensim.models import Word2Vec
 import argparse
 from gensim.models.keyedvectors import KeyedVectors
+import itertools
 
-#return a similarity score
+#return a set of similarity scores from a set of property-specific embeddings
 
 class entity2rel(object):
 
-	def __init__(self, embedding_file, binary = True):
+	def __init__(self, binary = True):
 
-		self.embedding_file = embedding_file
 		self.binary = binary
+		self.embedding_files = []
 
-		self._load_embedding()
+	def add_embedding(self, embedding_file):
 
-	def _load_embedding(self):
+		#generator of embeddings, don't have to store everything in memory together
+		self.embedding_files.append(embedding_file)
 
-		self.embedding = KeyedVectors.load_word2vec_format(self.embedding_file, binary=self.binary) #a set of embeddings as a generator
+	def relatedness_scores(self, uri1, uri2):
 
+		scores = []
 
-	def similarity(self, uri1, uri2):
+		for embedding in self.embedding_files:
 
-		return self.embedding.similarity(uri1,uri2)
+			emb = KeyedVectors.load_word2vec_format(embedding, binary=self.binary)
+
+			try:
+				scores.append(emb.similarity(uri1,uri2))
+
+			except KeyError:
+				scores.append(0.)
+
+			del emb
+
+		return scores
 
 
 	@staticmethod
@@ -43,24 +57,27 @@ if __name__ == '__main__':
 
 	uri3 = "http://dbpedia.org/resource/Romeo_and_Juliet_(1996_movie)"
 
-	embedding = "../emb/movielens_1m_no_overwrite/feedback/num500_p1_q4_l10_d500.emd"
+	embedding1 = "emb/movielens_1m_no_overwrite/feedback/num500_p1_q4_l10_d500.emd"
+
+	embedding2 = "emb/movielens_1m_no_overwrite/dbo:director/num500_p1_q4_l10_d500.emd"
 
 	args = entity2rel.parse_args()
 
-	rel = entity2rel(embedding)
+	rel = entity2rel()
+
+	rel.add_embedding(embedding1)
+	rel.add_embedding(embedding2)
 
 	print('\n')
 	print("Similarity between Pulp Fiction and Jackie Brown is:\n")
-	s = rel.similarity(uri1, uri2)
-	print(s)
-	print('\n')
+	scores = rel.relatedness_scores(uri1, uri2)
+	for s in scores:
+		print(s)
+		print('\n')
 
 	print("Similarity between Pulp Fiction and Romeo and Juliet is:\n")
-	s = rel.similarity(uri1, uri3)
-	print(s)
-	print('\n')
+	scores = rel.relatedness_scores(uri1, uri3)
 
-	print("Most similar entities to Pulp Fiction are:\n")
-
-	for i in rel.embedding.most_similar(positive=[uri1]):
-		print(i)
+	for s in scores:
+		print(s)
+		print('\n')
