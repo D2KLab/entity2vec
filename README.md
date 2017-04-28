@@ -19,13 +19,13 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset. The set of properties can be defined in the configuration file config/properties.json, otherwise the software will run on each file that is located in datasets/your_dataset/graphs. Using the argument --sparql it is also possible to query a sparql endpoint to download the graphs in datasets/your_dataset/graphs.
 
 ```
-  python src/entity2vec.py
+  python src/entity2vec.py --dataset dataset --config_file config_file --entities entities
 
---dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
+dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
 
---config_file: mandatory, by default config/config.properties.
+config_file: mandatory, by default config/config.properties.
 
---entities: optional, a list of entities for which the embeddings have to be computed. By default, it will use them all.
+entities: optional, a list of entities for which the embeddings have to be computed. By default, it will use them all.
 ```
 
 ## Entity classification
