@@ -20,6 +20,12 @@ Compute user and item embeddings from a Knowledge Graph encompassing both user f
 
 ```
   python src/entity2vec.py
+
+--dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
+
+--config_file: mandatory, by default config/config.properties.
+
+--entities: optional, a list of entities for which the embeddings have to be computed. By default, it will use them all.
 ```
 
 ## Entity classification
