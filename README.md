@@ -20,7 +20,7 @@ Compute user and item embeddings from a Knowledge Graph encompassing both user f
 
 ```
   python src/entity2vec.py --dataset dataset --config_file config_file --entities entities --sparql sparql --default_graph default_graph
-
+```
 dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
 
 config_file: mandatory, by default config/config.properties.
@@ -30,7 +30,6 @@ entities: optional, a list of entities for which the embeddings have to be compu
 sparql: optional, endpoint from which property-specific graphs are obtained. If not provided, it assumes that the graphs are already stored in datasets/your_dataset/graphs
 
 default_graph: optional, whether using a default_graph in the SPARQL endpoint
-```
 
 ## Entity classification
 
