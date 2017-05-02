@@ -63,14 +63,13 @@ class entity2rec(entity2vec, entity2rel):
 
 				self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
 
-				if relevance > 4: #only relevant items are used to compute the similarity
+				if relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
 
 					self.items_liked_by_user_dict[u].append(item)
 
 				self.all_train_items.append(item)
 
 		self.all_train_items = list(set(self.all_train_items)) #remove duplicates
-
 
 
 	def _get_all_items(self):
@@ -114,7 +113,6 @@ class entity2rec(entity2vec, entity2rel):
 				del self.all_train_items
 
 
-
 	def collab_similarity(self, user, item):
 
 		#feedback embedding is always the last of the list
@@ -133,6 +131,9 @@ class entity2rec(entity2vec, entity2rel):
 		for past_item in items_liked_by_user:
 
 			sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
+		
+		if len(sims) == 0:
+			sims = 0.5*np.ones(len(self.properties))
 
 		return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
 
@@ -188,6 +189,8 @@ class entity2rec(entity2vec, entity2rel):
 
 				count += 1		
 
+
+
 	def get_candidates(self,user):
 
 		#get candidates according to the all unrated items protocol
@@ -203,6 +206,8 @@ class entity2rec(entity2vec, entity2rel):
 	def feature_generator(self):
 
 		#write training set
+
+		start_time = time.time()
 
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
@@ -220,6 +225,8 @@ class entity2rec(entity2vec, entity2rel):
 
 		print('finished writing training')
 
+		print("--- %s seconds ---" % (time.time() - start_time))
+
 		#write test set
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
@@ -230,13 +237,13 @@ class entity2rec(entity2vec, entity2rel):
 
 				#write some candidate items
 
+				print(user,item)
+
 				user_id = entity2rec.parse_user_id(user)
 
 				candidate_items = self.get_candidates(user)
 
 				shuffle(candidate_items) #relevant and non relevant items are shuffled
-
-				print(len(candidate_items))
 
 				for item in candidate_items:
 
@@ -251,6 +258,8 @@ class entity2rec(entity2vec, entity2rel):
 					self.write_line(user, user_id, item, rel, test_write)
 
 		print('finished writing test')
+
+		print("--- %s seconds ---" % (time.time() - start_time))
 
 
 	def run(self, run_all):
@@ -338,7 +347,7 @@ class entity2rec(entity2vec, entity2rel):
 if __name__ == '__main__':
 
 
-	start_time = time.time()
+	#start_time = time.time()
 
 	args = entity2rec.parse_args()
 
@@ -346,4 +355,4 @@ if __name__ == '__main__':
 
 	rec.run(args.run_all)
 
-	print("--- %s seconds ---" % (time.time() - start_time))
+	#print("--- %s seconds ---" % (time.time() - start_time))
