@@ -9,9 +9,9 @@ from entity2vec import entity2vec
 from entity2rel import entity2rel
 import argparse
 import time
+from random import shuffle
 
 class entity2rec(entity2vec, entity2rel):
-
 
 	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, binary=True):
 
@@ -27,12 +27,14 @@ class entity2rec(entity2vec, entity2rel):
 
 		self._get_items_liked_by_user() #defines the dictionary of items liked by each user in the training set
 
+		self._get_all_items() #define all the items that can be used as candidates for the recommandations
+
 
 	def _get_embedding_files(self):
 
 		for prop in self.properties:
 
-			self.add_embedding('emb/%s/%s/num%s_p%s_q%s_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, self.p, self.q, self.walk_length,self.dimensions))
+			self.add_embedding(u'emb/%s/%s/num%s_p%s_q%s_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, self.p, self.q, self.walk_length,self.dimensions))
 
 
 	def _get_items_liked_by_user(self):
@@ -40,6 +42,10 @@ class entity2rec(entity2vec, entity2rel):
 		self.all_train_items = []
 
 		self.items_liked_by_user_dict = collections.defaultdict(list)
+
+		self.items_ratings_by_user_test = {}
+
+		self.items_rated_by_user_train = collections.defaultdict(list)
 
 		with codecs.open(self.training,'r', encoding='utf-8') as train:
 
@@ -53,11 +59,59 @@ class entity2rec(entity2vec, entity2rel):
 
 				relevance = int(line[2])
 
+				self.items_rated_by_user_train[u].append(item)
+
+				self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
+
 				if relevance > 4: #only relevant items are used to compute the similarity
 
 					self.items_liked_by_user_dict[u].append(item)
 
 				self.all_train_items.append(item)
+
+		self.all_train_items = list(set(self.all_train_items)) #remove duplicates
+
+
+
+	def _get_all_items(self):
+
+		self.all_items = []
+
+		if self.entities != "all": #if it has been provided a list of items as an external file, read from it
+
+			del self.all_train_items #free memory space
+
+			with codecs.open(self.entities, 'r', encoding='utf-8') as items:
+
+				for item in items:
+
+					item = item.strip('\n')
+
+					self.all_items.append(item)
+
+		else: #otherwise join the items from the train and test set
+
+			with codecs.open(self.test,'r', encoding='utf-8') as test:
+
+				test_items = []
+
+				for line in test:
+
+					line = line.split(' ')
+
+					u = line[0]
+
+					item = line[1]
+
+					relevance = int(line[2])
+
+					test_items.append(item)
+
+					self.items_ratings_by_user_test[(u,item)] = relevance
+
+				self.all_items = list(set(self.all_train_items+test_items)) #merge lists and remove duplicates
+
+				del self.all_train_items
 
 
 
@@ -134,18 +188,25 @@ class entity2rec(entity2vec, entity2rel):
 
 				count += 1		
 
-
 	def get_candidates(self,user):
 
 		#get candidates according to the all unrated items protocol
+		#use as candidates all the the items that are not in the training set
 
-		return
+		rated_items_train = self.items_rated_by_user_train[user] #both in the train and in the test
+
+		candidate_items = [item for item in self.all_items if item not in rated_items_train] #all unrated items in the train
+
+		return candidate_items
 
 
 	def feature_generator(self):
 
 		#write training set
-		with codecs.open('features/%s/train.svm' %self.dataset,'w', encoding='utf-8') as train_write:
+
+		train_name = ((self.training).split('/')[-1]).split('.')[0]
+
+		with codecs.open('features/%s/%s.svm' %(self.dataset,train_name),'w', encoding='utf-8') as train_write:
 
 			with codecs.open(self.training,'r', encoding='utf-8') as training:
 
@@ -157,44 +218,39 @@ class entity2rec(entity2vec, entity2rel):
 
 					self.write_line(user, user_id, item, relevance, train_write)
 
-			print('finished written training')
+		print('finished writing training')
 
-			'''
-		with codecs.open('features/%s/test.svm','w', encoding='utf-8') as test_write:
+		#write test set
 
-			with codecs.open(self.test,'r', encoding='utf-8') as test:
+		test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-				for i, line in enumerate(test):
+		with codecs.open('features/%s/%s.svm' %(self.dataset,test_name),'w', encoding='utf-8') as test_write:
 
-					#write some candidate items
+			for user in self.items_rated_by_user_train.keys():
 
-					user, user_id, item, relevance = parse_users_items_rel(line)
+				#write some candidate items
 
-					write_line(user, user_id, item, relevance, test_write)
+				user_id = entity2rec.parse_user_id(user)
 
-					if i > 0: #skip first iteration
+				candidate_items = self.get_candidates(user)
 
-						if user == prev_user:
+				shuffle(candidate_items) #relevant and non relevant items are shuffled
 
-							continue
+				print(len(candidate_items))
 
-						else:
+				for item in candidate_items:
 
-							candidate_items = self.get_candidate_items(user)
+					try:
+						rel = int(self.items_ratings_by_user_test[(user,item)]) #get the relevance score if it's in the test
 
-							for item in candidate_items:
+						rel = 1 if rel >= 4 else 0
 
-								write_line(user, user_id, item, relevance)
+					except KeyError:
+						rel = 0. #unrated items are assumed to be negative 
 
-					prev_user = user
+					self.write_line(user, user_id, item, rel, test_write)
 
-
-			print('finished written test')
-	'''
-
-	def shuffle_features(self):
-
-		return
+		print('finished writing test')
 
 
 	def run(self, run_all):
@@ -270,7 +326,7 @@ class entity2rec(entity2vec, entity2rel):
 		parser.add_argument('--default_graph', dest = 'default_graph', default = False,
 		                    help='Default graph to query when using a Sparql endpoint')
 
-		parser.add_argument('--train', dest='train', help='train')
+		parser.add_argument('--train', dest='train', help='train', default = False)
 
 		parser.add_argument('--test', dest='test', help='test')
 
