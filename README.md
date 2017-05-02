@@ -31,7 +31,7 @@ sparql: optional, endpoint from which property-specific graphs are obtained. If 
 
 default_graph: optional, whether using a default_graph in the SPARQL endpoint
 
-## Entity Recommandation
+## Entity Recommendation
 
 Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset.
 
