@@ -2,37 +2,54 @@ from __future__ import print_function
 from gensim.models import Word2Vec
 import argparse
 from gensim.models.keyedvectors import KeyedVectors
-import itertools
 
 #return a set of similarity scores from a set of property-specific embeddings
 
 class entity2rel(object):
 
-	def __init__(self, binary = True):
+
+	def __init__(self, load_embeddings, binary = True):
 
 		self.binary = binary
 		self.embedding_files = []
 
+
 	def add_embedding(self, embedding_file):
 
-		#generator of embeddings, don't have to store everything in memory together
-		self.embedding_files.append(embedding_file)
+		#a list of embedding names
 
-	def relatedness_scores(self, uri1, uri2):
+		self.embedding_files.append(KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary))
+
+	def relatedness_score_by_position(self,uri1,uri2,pos):
+
+		try:
+
+			score = self.embedding_files[pos].similarity(uri1,uri2)
+
+		except KeyError:
+
+			score = 0.
+
+		return score
+
+	def relatedness_scores(self, uri1, uri2, skip = False):
 
 		scores = []
 
-		for embedding in self.embedding_files:
+		if skip:
+			ind = skip
+		else:
+			ind = len(self.embedding_files) #unless provided with a skip index, take them all
 
-			emb = KeyedVectors.load_word2vec_format(embedding, binary=self.binary)
+		for embedding in self.embedding_files[0:ind]:
 
 			try:
-				scores.append(emb.similarity(uri1,uri2))
+
+				scores.append(embedding.similarity(uri1,uri2))
 
 			except KeyError:
-				scores.append(0.)
 
-			del emb
+				scores.append(0.)
 
 		return scores
 
@@ -69,13 +86,13 @@ if __name__ == '__main__':
 	rel.add_embedding(embedding2)
 
 	print('\n')
-	print("Similarity between Pulp Fiction and Jackie Brown is:\n")
+	print("Relatedness between Pulp Fiction and Jackie Brown is:\n")
 	scores = rel.relatedness_scores(uri1, uri2)
 	for s in scores:
 		print(s)
 		print('\n')
 
-	print("Similarity between Pulp Fiction and Romeo and Juliet is:\n")
+	print("Relatedness between Pulp Fiction and Romeo and Juliet is:\n")
 	scores = rel.relatedness_scores(uri1, uri3)
 
 	for s in scores:
