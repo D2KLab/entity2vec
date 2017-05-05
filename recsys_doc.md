@@ -14,23 +14,20 @@ You can now either provide a set of property-specific graphs or a SPARQL endpoin
 [OPTIONAL]: in config/config.properties, enter the name of your dataset as key and a set of properties for which you want to compute the embeddings. 
 If not done, by default, it will use all the graphs stored in datasets/your_dataset/graphs or it will get all the possible properties from the SPARQL endpoint.
 
-2) Generate property-specific entity embeddings through entity2vec
 
-$python entity2vec.py
+2) Generate features for recommendations
 
---dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
+$python entity2rec.py --dataset dataset --training training_set --test test_set --run_all
+
+--run_all: run entity2vec to obtain the embeddings. need to be done only once.
 
 --config_file: mandatory, by default config/config.properties.
 
 --entities: optional, a list of entities for which the embeddings have to be computed. By default, it will use them all.
 
+--dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
 
-4) Generate features
-
-$python feature_generator.py -d dataset -e embedding_file -o output --training training_set --test test_set
-
-
-5) Generate recommendations with RankLib
+3) Generate recommendations with RankLib
 
 $cd ranking
 
