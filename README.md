@@ -33,8 +33,19 @@ default_graph: optional, whether using a default_graph in the SPARQL endpoint
 
 ## Entity Recommendation
 
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset.
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling entity2vec using the command line argument --run_all. It adopts by default the AllItems candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommandation.
 
+```
+python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat 
+```
+
+where it is assumed that the training and test set have the format:
+
+```
+user_id item_id rating timestamp
+
+```
+if the argument --run_all is provided, entity2vec will be called and generate property specific embeddings and all its command line arguments can be used. Otherwise, the embeddings will be loaded from the emb/ folder.
 
 ## Entity classification
 
