@@ -3,7 +3,9 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 
 - A reimplementation of node2vec as an iterator, which reduces the memory overhead. It also introduces the possibility of avoiding the preprocessing of the transition probabilities, which has the effect of reducing memory effort, but slowing down the computation
 
-- The implementation of entity2vec, which generates a set of entity embeddings from Knowledge Graphs corresponding to different properties. Entity2vec can work with a set of pre-dowloaded dumps or download them from a SPARQL endpoint. 
+- entity2vec, which generates a set of entity embeddings from Knowledge Graphs corresponding to different properties. Entity2vec can work with a set of pre-dowloaded dumps or download them from a SPARQL endpoint. 
+
+- entity2rec, which generates a set of recommended entities combining property-specific similarity scores obtained using entity2vec embeddings. 
 
 ## Requirements
 
