@@ -1,3 +1,4 @@
+from __future__ import print_function
 import optparse
 import os
 import codecs
@@ -13,17 +14,17 @@ from random import shuffle
 
 class entity2rec(entity2vec, entity2rel):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, binary=True):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit):
 
 		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph)
 
-		entity2rel.__init__(self, binary)
+		entity2rel.__init__(self, True) #binary format embeddings
 
 		self.training = training
 
 		self.test = test
 
-		self._get_embedding_files()
+		self.implicit = implicit
 
 		self._get_items_liked_by_user() #defines the dictionary of items liked by each user in the training set
 
@@ -63,7 +64,11 @@ class entity2rec(entity2vec, entity2rel):
 
 				self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
 
-				if relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
+				if self.implicit == False and relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
+
+					self.items_liked_by_user_dict[u].append(item)
+
+				elif self.implicit == True and relevance == 1:
 
 					self.items_liked_by_user_dict[u].append(item)
 
@@ -134,6 +139,7 @@ class entity2rec(entity2vec, entity2rel):
 		
 		if len(sims) == 0:
 			sims = 0.5*np.ones(len(self.properties))
+			return sims
 
 		return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
 
@@ -158,7 +164,8 @@ class entity2rec(entity2vec, entity2rel):
 		relevance = int(line[2]) #5
 
 		#binarization of the relevance values
-		relevance = 1 if relevance >= 4 else 0		
+		if self.implicit == False:
+			relevance = 1 if relevance >= 4 else 0		
 
 		return (user, user_id, item, relevance)
 
@@ -208,7 +215,7 @@ class entity2rec(entity2vec, entity2rel):
 		#write training set
 
 		start_time = time.time()
-
+		'''
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
 		with codecs.open('features/%s/%s.svm' %(self.dataset,train_name),'w', encoding='utf-8') as train_write:
@@ -219,14 +226,14 @@ class entity2rec(entity2vec, entity2rel):
 
 					user, user_id, item, relevance = entity2rec.parse_users_items_rel(line)
 
-					print(user,item)
+					print(user)
 
 					self.write_line(user, user_id, item, relevance, train_write)
 
 		print('finished writing training')
 
 		print("--- %s seconds ---" % (time.time() - start_time))
-
+		'''
 		#write test set
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
@@ -237,7 +244,7 @@ class entity2rec(entity2vec, entity2rel):
 
 				#write some candidate items
 
-				print(user,item)
+				print(user)
 
 				user_id = entity2rec.parse_user_id(user)
 
@@ -250,7 +257,8 @@ class entity2rec(entity2vec, entity2rel):
 					try:
 						rel = int(self.items_ratings_by_user_test[(user,item)]) #get the relevance score if it's in the test
 
-						rel = 1 if rel >= 4 else 0
+						if self.implicit == False:
+							rel = 1 if rel >= 4 else 0
 
 					except KeyError:
 						rel = 0. #unrated items are assumed to be negative 
@@ -266,8 +274,10 @@ class entity2rec(entity2vec, entity2rel):
 
 		if run_all:
 			self.entity2vec.run()
+			self._get_embedding_files()
 
 		else:
+			self._get_embedding_files()
 			self.feature_generator()
 
 
@@ -341,18 +351,21 @@ class entity2rec(entity2vec, entity2rel):
 
 		parser.add_argument('--run_all', dest='run_all', default = False, help='If computing also the embeddings')
 
+		parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
+
+
 		return parser.parse_args()
 
 
 if __name__ == '__main__':
 
 
-	#start_time = time.time()
+	start_time = time.time()
 
 	args = entity2rec.parse_args()
 
-	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test)
+	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit)
 
 	rec.run(args.run_all)
 
-	#print("--- %s seconds ---" % (time.time() - start_time))
+	print("--- %s seconds ---" % (time.time() - start_time))
