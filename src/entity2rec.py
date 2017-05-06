@@ -180,6 +180,8 @@ class entity2rec(entity2vec, entity2rel):
 
 		file.write(' %d:%f' %(count,collab_score))
 
+		count += 1
+		
 		content_scores = self.content_similarities(user, item)
 
 		l = len(content_scores)
@@ -215,7 +217,7 @@ class entity2rec(entity2vec, entity2rel):
 		#write training set
 
 		start_time = time.time()
-		'''
+
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
 		with codecs.open('features/%s/%s.svm' %(self.dataset,train_name),'w', encoding='utf-8') as train_write:
@@ -233,7 +235,7 @@ class entity2rec(entity2vec, entity2rel):
 		print('finished writing training')
 
 		print("--- %s seconds ---" % (time.time() - start_time))
-		'''
+
 		#write test set
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
