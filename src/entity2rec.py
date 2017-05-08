@@ -35,7 +35,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		for prop in self.properties:
 
-			self.add_embedding(u'emb/%s/%s/num%s_p%s_q%s_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, self.p, self.q, self.walk_length,self.dimensions))
+			self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, int(self.p), int(self.q), self.walk_length,self.dimensions))
 
 
 	def _get_items_liked_by_user(self):
@@ -150,8 +150,7 @@ class entity2rec(entity2vec, entity2rel):
 		return int(user.strip('user')) #29
 
 
-	@staticmethod
-	def parse_users_items_rel(line):
+	def parse_users_items_rel(self,line):
 
 		line = line.split(' ')
 
@@ -188,7 +187,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		for content_score in content_scores:
 
-			if count == l: #last score, end of line
+			if count == l + 1: #last score, end of line
 
 				file.write(' %d:%f # %s\n' %(count,content_score,item))
 
@@ -226,7 +225,7 @@ class entity2rec(entity2vec, entity2rel):
 
 				for i, line in enumerate(training):
 
-					user, user_id, item, relevance = entity2rec.parse_users_items_rel(line)
+					user, user_id, item, relevance = self.parse_users_items_rel(line)
 
 					print(user)
 
