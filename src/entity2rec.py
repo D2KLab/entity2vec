@@ -219,7 +219,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/%s.svm' %(self.dataset,train_name),'w', encoding='utf-8') as train_write:
+		with codecs.open('features/%s/%s_p%d_q%d.svm' %(self.dataset,train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
 
 			with codecs.open(self.training,'r', encoding='utf-8') as training:
 
@@ -239,7 +239,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/%s.svm' %(self.dataset,test_name),'w', encoding='utf-8') as test_write:
+		with codecs.open('features/%s/%s_p%d_q%d.svm' %(self.dataset,test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
 
 			for user in self.items_rated_by_user_train.keys():
 
