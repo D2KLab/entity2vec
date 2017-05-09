@@ -102,7 +102,6 @@ class sparql(object):
 
 					for prop in properties: #iterate on the properties
 
-
 						prop_short = prop
 
 						if '/' in prop:
@@ -146,6 +145,21 @@ class sparql(object):
 							f.seek(0) #reinitialize iterator
 
 		return 
+
+
+
+	@staticmethod
+	def get_uri_from_wiki_id(wiki_id):
+
+
+		sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> ?%d 
+		   }""" %wiki_id)
+
+		sparql.setReturnFormat(JSON)
+
+		return sparql.query().convert()['results']['bindings'][0]['s']['value']
 
 
 if __name__ == '__main__':
