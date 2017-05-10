@@ -18,7 +18,7 @@ from sparql import sparql
 
 class entity2vec(node2vec):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class):
 
 		node2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations)
 
@@ -31,6 +31,8 @@ class entity2vec(node2vec):
 		self.dataset = dataset
 
 		self.entities = entities
+
+		self.entity_class = entity_class
 
 		self._define_properties()
 
@@ -50,9 +52,9 @@ class entity2vec(node2vec):
 
 			if self.sparql: #get all the properties from the sparql endpoint
 
-				sparql_query = sparql(self.entities, "all", self.dataset, self.sparql, self.default_graph)
+				sparql_query = sparql(self.entities, "all", self.dataset, self.sparql, self.default_graph, self.entity_class)
 
-				self.properties = sparql_query.get_all_properties()
+				self.properties = sparql_query.properties
 
 				self.properties.append('feedback') #add the feedback property that is not defined in the graph
 
@@ -121,7 +123,7 @@ class entity2vec(node2vec):
 
 		if self.sparql:
 
-			sparql_query = sparql(self.entities, self.properties, self.dataset, self.sparql, self.default_graph)
+			sparql_query = sparql(self.entities, self.properties, self.dataset, self.sparql, self.default_graph, self.entity_class)
 
 			sparql_query.get_property_graphs()
 
@@ -192,6 +194,9 @@ class entity2vec(node2vec):
 		parser.add_argument('--default_graph', dest = 'default_graph', default = False,
 		                    help='Default graph to query when using a Sparql endpoint')
 
+
+		parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+
 		return parser.parse_args()
 
 
@@ -235,7 +240,10 @@ if __name__ == '__main__':
 
 	print('default graph = %s\n' %args.default_graph)
 
-	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph)
+	print('entity class = %s\n' %args.entity_class)
+
+
+	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.entity_class)
 
 	e2v.run()
 

@@ -14,9 +14,9 @@ from random import shuffle
 
 class entity2rec(entity2vec, entity2rel):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class):
 
-		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph)
+		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
 
 		entity2rel.__init__(self, True) #binary format embeddings
 
@@ -216,10 +216,10 @@ class entity2rec(entity2vec, entity2rel):
 		#write training set
 
 		start_time = time.time()
-
+		'''
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/%s_p%d_q%d.svm' %(self.dataset,train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
+		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
 
 			with codecs.open(self.training,'r', encoding='utf-8') as training:
 
@@ -234,12 +234,12 @@ class entity2rec(entity2vec, entity2rel):
 		print('finished writing training')
 
 		print("--- %s seconds ---" % (time.time() - start_time))
-
+		'''
 		#write test set
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/%s_p%d_q%d.svm' %(self.dataset,test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
+		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
 
 			for user in self.items_rated_by_user_train.keys():
 
@@ -262,7 +262,7 @@ class entity2rec(entity2vec, entity2rel):
 							rel = 1 if rel >= 4 else 0
 
 					except KeyError:
-						rel = 0. #unrated items are assumed to be negative 
+						rel = 0 #unrated items are assumed to be negative 
 
 					self.write_line(user, user_id, item, rel, test_write)
 
@@ -354,6 +354,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
 
+    	parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
 
 		return parser.parse_args()
 
@@ -365,7 +366,7 @@ if __name__ == '__main__':
 
 	args = entity2rec.parse_args()
 
-	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit)
+	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class)
 
 	rec.run(args.run_all)
 
