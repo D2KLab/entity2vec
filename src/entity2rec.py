@@ -12,6 +12,11 @@ import argparse
 import time
 from random import shuffle
 
+###############################################################################################################################################
+## Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph embeddings and user feedback ##
+###############################################################################################################################################
+
+
 class entity2rec(entity2vec, entity2rel):
 
 	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class):
@@ -138,7 +143,7 @@ class entity2rec(entity2vec, entity2rel):
 			sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
 		
 		if len(sims) == 0:
-			sims = 0.5*np.ones(len(self.properties))
+			sims = 0.5*np.ones(len(self.properties) - 1)
 			return sims
 
 		return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
@@ -216,7 +221,7 @@ class entity2rec(entity2vec, entity2rel):
 		#write training set
 
 		start_time = time.time()
-		'''
+
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
 		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
@@ -234,7 +239,7 @@ class entity2rec(entity2vec, entity2rel):
 		print('finished writing training')
 
 		print("--- %s seconds ---" % (time.time() - start_time))
-		'''
+
 		#write test set
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
