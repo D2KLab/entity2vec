@@ -16,7 +16,7 @@ class MW(object):
 
 		self.N = len(self.graph.nodes())
 
-	def similarity(self, node1, node2):
+	def relatedness(self, node1, node2):
 
 		G = self.graph
 
