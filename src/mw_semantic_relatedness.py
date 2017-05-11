@@ -34,8 +34,6 @@ class MW(object):
 
 		n_A_B = len([i for i in A if i in B])
 
-		print(n_A,n_B,n_A_B)
-
 		m_w = 1 - (np.log(max(n_A,n_B)) - np.log(n_A_B))/(np.log(self.N) - np.log(min(n_A,n_B))) 
 
 		if math.isnan(m_w) == True: #by definition if one of the two nodes has no inlinks
