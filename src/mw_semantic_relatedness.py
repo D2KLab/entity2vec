@@ -34,6 +34,7 @@ class MW(object):
 
 		n_A_B = len([i for i in A if i in B])
 
+
 		if n_A*n_B == 0:
 			return 0.
 
