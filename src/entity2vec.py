@@ -14,7 +14,9 @@ import codecs
 from SPARQLWrapper import SPARQLWrapper, JSON
 from sparql import sparql
 
-#Generates property-speficic entity embeddings from a Knowledge Graph
+####################################################################################
+## Generates a set of property-speficic entity embeddings from a Knowledge Graph ###
+####################################################################################
 
 class entity2vec(node2vec):
 
@@ -52,17 +54,19 @@ class entity2vec(node2vec):
 
 			if self.sparql: #get all the properties from the sparql endpoint
 
-				sparql_query = sparql(self.entities, "all", self.dataset, self.sparql, self.default_graph, self.entity_class)
+				sparql_query = sparql(self.entities, self.config, self.dataset, self.sparql, self.default_graph, self.entity_class)
 
 				self.properties = sparql_query.properties
 
 				self.properties.append('feedback') #add the feedback property that is not defined in the graph
 
 			else: #get everything you have in the folder
-			
-				onlyfiles = [f for f in listdir('datasets/%s/graphs/%s') if isfile(join(mypath, f))]
+				
+				path_to_graphs = 'datasets/%s/graphs' %self.dataset
 
-				self.properties = [file.strip('.edgelist') for file in onlyfiles]
+				onlyfiles = [f for f in listdir(path_to_graphs) if isfile(join(path_to_graphs, f))]
+
+				self.properties = [file.replace('.edgelist','') for file in onlyfiles]
 
 				if 'feedback' in self.properties: #feedback property always the last one of the list
 					self.properties.remove('feedback')
@@ -96,13 +100,13 @@ class entity2vec(node2vec):
 
 		for prop_name in self.properties:
 
+			print(prop_name)
+
 			prop_short = prop_name
 
 			if '/' in prop_name:
 
 				prop_short = prop_name.split('/')[-1]
-
-				prop_short = prop_short[0:-1]
 
 			graph = "datasets/%s/graphs/%s.edgelist" %(self.dataset, prop_short)
 
