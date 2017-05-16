@@ -132,15 +132,16 @@ class node2vec(object):
 		'''
 		Learn embeddings by optimizing the Skipgram objective using SGD.
 		'''
+		self._simulate_walks()
 
-		model = Word2Vec(self, size=self.dimensions, window=self.window_size, min_count=0, 
+		model = Word2Vec(self._walks, size=self.dimensions, window=self.window_size, min_count=0, 
 			workers=self.workers, iter=self.iter, negative = 25, sg = 1)
 
 		print("defined model using w2v")
 
 		model.wv.save_word2vec_format(output, binary = True)
-
-		print("saved model in word2vec format")
+		#model.save(output)
+		print("saved model in word2vec binary format")
 
 		return
 
@@ -167,13 +168,16 @@ class node2vec(object):
 		return node2vec.alias_setup(normalized_probs)
 
 
-	def __iter__(self):
+	def _simulate_walks(self):
 
 		'''
 		Generator of walks simulate random walks from each node.
 		'''
 		G = self.G
 		nodes = G.nodes()
+
+		self._walks = []
+
 		print('Walk iteration:')
 
 		for walk_iter in range(self.num_walks):
@@ -190,7 +194,7 @@ class node2vec(object):
 
 				c += 1
 
-				yield self.node2vec_walk(start_node=node)
+				self._walks.append(self.node2vec_walk(start_node=node))
 
 	def preprocess_transition_probs(self):
 		'''
@@ -296,7 +300,6 @@ class node2vec(object):
 
 		parser.add_argument('--weighted', dest='weighted', action='store_true',
 		                    help='Boolean specifying (un)weighted. Default is unweighted.')
-		parser.add_argument('--unweighted', dest='unweighted', action='store_false')
 		parser.set_defaults(weighted=False)
 
 		parser.add_argument('--directed', dest='directed', action='store_true',
