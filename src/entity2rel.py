@@ -2,8 +2,13 @@ from __future__ import print_function
 from gensim.models import Word2Vec
 import argparse
 from gensim.models.keyedvectors import KeyedVectors
-import sparql
-#return a set of similarity scores from a set of property-specific embeddings
+from sparql import sparql
+import codecs
+
+
+################################################################################################################################
+## Computes a set of relatedness scores between a pair of entities from a set of property-specific Knowledge Graph embeddings ##
+################################################################################################################################
 
 class entity2rel(object):
 
@@ -31,6 +36,7 @@ class entity2rel(object):
 
 		return score
 
+
 	def relatedness_scores(self, uri1, uri2, skip = False):
 
 		scores = []
@@ -39,6 +45,11 @@ class entity2rel(object):
 			ind = skip
 		else:
 			ind = len(self.embedding_files) #unless provided with a skip index, take them all
+
+		if uri1 == None or uri2 == None:
+
+			scores = [0.]
+
 
 		for embedding in self.embedding_files[0:ind]:
 
@@ -61,18 +72,22 @@ class entity2rel(object):
 
 		query_id = int((line[1].split(':'))[1])
 
-		wiki_id_query = int(line[2])
+		doc_id = line[-1]
 
-		wiki_id_candidate = int(line[3])
+		ids = line[-2].split('-')
 
-		return (wiki_id_query, query_id, wiki_id_candidate, relevance)
+		wiki_id_query = int(ids[0])
+
+		wiki_id_candidate = int(ids[1])
+
+		return (wiki_id_query, query_id, wiki_id_candidate, relevance, doc_id)
 
 
-	def write_line(self, query, query_id, candidate, relevance, file):
+	def write_line(self, query_uri, qid, candidate_uri, relevance, file, doc_id):
 
-		scores = self.relatedness_scores(query, candidate_entity)
+		scores = self.relatedness_scores(query_uri, candidate_uri)
 
-		file.write('%d qid:%d' %(relevance,query_id))
+		file.write('%d qid:%d' %(relevance,qid))
 
 		count = 1
 
@@ -80,9 +95,9 @@ class entity2rel(object):
 
 		for score in scores:
 
-			if count == l + 1: #last score, end of line
+			if count == l: #last score, end of line
 
-				file.write(' %d:%f # %s\n' %(count,score,candidate))
+				file.write(' %d:%f # %s-%s %d\n' %(count,score,query_uri,candidate_uri, int(doc_id)))
 
 			else:
 
@@ -101,20 +116,15 @@ class entity2rel(object):
 
 				for i, line in enumerate(data_read):
 
-					wiki_id_query, query_id, wiki_id_candidate, relevance = self.parse_ceccarelli_line(line)
+					wiki_id_query, qid, wiki_id_candidate, relevance, doc_id = self.parse_ceccarelli_line(line)
 
 					print(wiki_id_query)
 
-					try:
+					uri_query = sparql.get_uri_from_wiki_id(wiki_id_query)
 
-						uri_query = sparql.get_uri_from_wiki_id(wiki_id_query)
+					uri_candidate = sparql.get_uri_from_wiki_id(wiki_id_candidate)
 
-						uri_candidate = sparql.get_uri_from_wiki_id(wiki_id_candidate)
-
-					except KeyError:
-						continue
-
-					self.write_line(uri_query, query_id, uri_candidate, relevance)
+					self.write_line(uri_query, qid, uri_candidate, relevance, data_write, doc_id)
 
 		print('finished writing features')
 
@@ -122,7 +132,6 @@ class entity2rel(object):
 
 
 	def run(self,data):
-
 
 		e2r = self.entity2rel()
 
