@@ -1,10 +1,15 @@
+# -*- encoding: utf8 -*-
+
 import networkx as nx
 import numpy as np
 import math
+from entity2rel import entity2rel
 
-class MW(object):
+class MW(entity2rel):
 
 	def __init__(self,edgelist):
+
+		entity2rel.__init__(self)
 
 		self.edgelist = edgelist
 
@@ -16,7 +21,8 @@ class MW(object):
 
 		self.N = len(self.graph.nodes())
 
-	def relatedness(self, node1, node2):
+	#overriding of the parent function
+	def relatedness_scores(self, node1, node2):
 
 		G = self.graph
 
@@ -36,19 +42,32 @@ class MW(object):
 
 
 		if n_A*n_B == 0:
-			return 0.
+			return [0.]
 
 		else:
 
 			m_w = 1 - (np.log(max(n_A,n_B)) - np.log(n_A_B))/(np.log(self.N) - np.log(min(n_A,n_B))) 
 
-			return m_w
+			return [m_w]
+
+
+	def run(self, data):
+
+		mw = self.MW()
+
+		mw.feature_generator(data)
 
 
 if __name__ == '__main__':
 
+	print('test relatedness:')
+
 	mw = MW('tests/test_mw.edgelist')
 
-	s = mw.relatedness(u'<http://dbpedia.org/resource/Copenhagen>', u'<http://dbpedia.org/resource/Denmark>')
+	s = mw.relatedness_scores(u'<http://dbpedia.org/resource/Copenhagen>', u'<http://dbpedia.org/resource/Denmark>')
 
 	print(s)
+
+	print('test feature generation:')
+
+	mw.feature_generator('datasets/ceccarelli/training.svm')
