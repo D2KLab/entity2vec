@@ -1,0 +1,1 @@
+c=0;for line in `cat <(cut -f1 -d' ' datasets/dbpedia/graphs/page_links_en_2015.edgelist) <(cut -f2 -d' ' datasets/dbpedia/graphs/page_links_en_2015.edgelist) | sort -u`; do echo "$line $c" >> datasets/dbpedia/page_links_en_2015_index.txt;((c=c+1)); done

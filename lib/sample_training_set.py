@@ -29,7 +29,7 @@ def sample_training_set(feature_file, sampled_feature_file, f):
 
 					l = len(feature_query)
 
-					k = int(np.round(f*l))
+					k = max([1,int(np.round(f*l))]) #at least one always
 
 					sample = random.sample(feature_query, k)
 
@@ -46,7 +46,7 @@ def sample_training_set(feature_file, sampled_feature_file, f):
 
 			l = len(feature_query)
 
-			k = int(np.round(f*l))
+			k = max([1,int(np.round(f*l))])
 
 			sample = random.sample(feature_query, k)
 

@@ -23,7 +23,7 @@ def get_property_graphs(entities, properties, folder, output_folder):
 					sparql.setQuery("""
 				     SELECT ?s ?o  WHERE {
 				     ?s %s ?o.
-				     }""" %(prop,uri))
+				     FILTER (?s = %s)}""" %(prop,uri))
 
 					sparql.setReturnFormat(JSON)
 

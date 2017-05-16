@@ -57,6 +57,8 @@ def scorer(embeddings, gold_standard,N, similarity):
 
         #print doc_id,query_id, candidate_id, truth_value
 
+        print query_id
+
         query_url = get_url_from_id(query_id)
 
         query_e2v = e2v_embeddings[e2v_embeddings[0] == query_url].values #query vector = [0.2,-0.3,0.1,0.7 ...]
@@ -67,6 +69,8 @@ def scorer(embeddings, gold_standard,N, similarity):
         except IndexError:
             
             missing_query_entities.append(query_url)
+
+        print candidate_id
 
         candidate_url = get_url_from_id(candidate_id)
 

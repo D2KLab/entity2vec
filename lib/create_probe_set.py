@@ -5,11 +5,13 @@ import numpy as np
 
 #create test set using 80%-20% future split
 
-dataset = '../datasets/movielens_1m/'
+dataset = 'datasets/movielens_1m/'
+
+file_name = 'ratings_dbpedia_probe'
 
 user_films = defaultdict(list)
 
-with codecs.open(dataset+'ratings_dbpedia.dat','r', encoding = 'utf-8') as f:
+with codecs.open(dataset+file_name+'.dat','r', encoding = 'utf-8') as f:
 	for line in f:
 
 		line = line.split(' ')
@@ -17,14 +19,12 @@ with codecs.open(dataset+'ratings_dbpedia.dat','r', encoding = 'utf-8') as f:
 
 		user_films[user].append((line[1],line[2],line[3]))
 
-with codecs.open(dataset+'ratings_dbpedia_train.dat','w', encoding = 'utf-8') as train:
-	with codecs.open(dataset+'ratings_dbpedia_test.dat','w', encoding = 'utf-8') as test:
+with codecs.open(dataset+file_name+'_train.dat','w', encoding = 'utf-8') as train:
+	with codecs.open(dataset+file_name+'_test.dat','w', encoding = 'utf-8') as test:
 
 		for user in sorted(user_films.keys()):
 
 			values = user_films[user]
-
-			#random.shuffle(values)
 
 			num_ratings = len(values)
 
@@ -39,8 +39,6 @@ with codecs.open(dataset+'ratings_dbpedia_train.dat','w', encoding = 'utf-8') as
 			for film, rating, timestamp in test_values:
 
 				test.write('%s %s %s %s' %(user,film, rating, timestamp))
-
-			#train_values = values[11:-1]
 
 			for film, rating, timestamp in train_values:
 

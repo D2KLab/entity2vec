@@ -43,19 +43,17 @@ class MostPop:
 
 		with codecs.open(self.test,'r',encoding='utf-8') as read_test:
 
-			user = 'user1'
-
-			for line in read_test:
+			for i, line in enumerate(read_test):
 
 				line = line.split(' ')
 
-				new_user = line[0]
+				user = line[0]
 
 				item = line[1]
 
 				rel = int(line[2])
 
-				if rel == 5:
+				if rel >= 4:
 
 					rel = 1
 
@@ -63,28 +61,34 @@ class MostPop:
 					
 					rel = 0
 
-				ranked_items[new_user].append((self.pop_dict[item], rel))
+				ranked_items[user].append((self.pop_dict[item], rel))
 
-				if new_user != user: #compute the score for the previous query user
+				if i > 0:
 
-					sorted_rank = sorted(ranked_items[user], key = itemgetter(0), reverse = True)
+					if prev_user != user: #compute the score for the previous query user
 
-					relevance = []	
+						sorted_rank = sorted(ranked_items[prev_user], key = itemgetter(0), reverse = True)
 
-					for score, rel in sorted_rank:
+						relevance = []	
 
-						relevance.append(rel)
+						for score, rel in sorted_rank:
 
-					prec_5.append(ranking.precision_at_k(relevance,5))
+							relevance.append(rel)
 
-					prec_10.append(ranking.precision_at_k(relevance,10))
+						print(relevance)
 
-					MAP.append(ranking.average_precision(relevance))
+						prec_5.append(ranking.precision_at_k(relevance,5))
 
-				user = new_user	
+						prec_10.append(ranking.precision_at_k(relevance,10))
+
+						MAP.append(ranking.average_precision(relevance))
+
+				prev_user = user
+
+				print(prev_user)	
 
 			#last user
-
+			'''
 			sorted_rank = sorted(ranked_items[user], key = itemgetter(0), reverse = True)
 
 			relevance = []	
@@ -98,7 +102,7 @@ class MostPop:
 			prec_10.append(ranking.precision_at_k(relevance,10))
 
 			MAP.append(ranking.average_precision(relevance))
-
+			'''
 
 		print(np.mean(prec_5),np.mean(prec_10),np.mean(MAP))
 
@@ -112,6 +116,6 @@ class MostPop:
 
 if __name__ == '__main__':
 	
-	a = MostPop('datasets/movielens_1m/ratings_dbpedia_train.dat','datasets/movielens_1m/ratings_dbpedia_userplusn_test.dat')
+	a = MostPop('datasets/movielens_1m/train.dat','datasets/movielens_1m/test.dat')
 
 	a.main()

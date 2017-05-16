@@ -6,24 +6,12 @@ import numpy as np
 from gensim.models import Word2Vec
 from pandas import read_json
 
+
 def get_e2v_embedding(embeddings_file):
 
 	model = Word2Vec.load_word2vec_format(embeddings_file, binary=True)
 
 	return model
-
-
-def get_e2v_embedding_vector(embedding_model,ID):
-
-	vec = []
-
-	try:
-		vec = embedding_model[ID]
-
-	except KeyError:#empty vector if it is not found
-		pass
-
-	return vec
 
 
 def get_items_liked_by_user(training):
@@ -133,8 +121,6 @@ def feature_generator(dataset, embedding_file, training, test, feature_file, off
 					for prop in properties: #for each property
 
 						emb = get_e2v_embedding('emb/'+dataset+'/'+prop+'/'+embedding_file) #read the property-embedding file into memory
-
-						#item_vec = get_e2v_embedding_vector(emb, item)	#w.r.t to the current property
 
 						if prop == properties[-1]: #last element
 
