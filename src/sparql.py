@@ -163,12 +163,18 @@ class sparql(object):
 
 		sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 
-		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> ?%d 
-		   }""" %wiki_id)
+		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> %d 
+		   }""" %int(wiki_id))
 
 		sparql.setReturnFormat(JSON)
+		
+		try:
+			uri = sparql.query().convert()['results']['bindings'][0]['s']['value']
 
-		return sparql.query().convert()['results']['bindings'][0]['s']['value']
+		except:
+			uri = None
+
+		return uri
 
 
 if __name__ == '__main__':
