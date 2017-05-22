@@ -4,14 +4,12 @@ import argparse
 from gensim.models.keyedvectors import KeyedVectors
 from sparql import sparql
 import codecs
-
-
+import time
 ################################################################################################################################
 ## Computes a set of relatedness scores between a pair of entities from a set of property-specific Knowledge Graph embeddings ##
 ################################################################################################################################
 
 class entity2rel(object):
-
 
 	def __init__(self, binary = True):
 
