@@ -54,14 +54,14 @@ class entity2vec(node2vec):
 
 			if self.sparql: #get all the properties from the sparql endpoint
 
-				sparql_query = sparql(self.entities, self.config, self.dataset, self.sparql, self.default_graph, self.entity_class)
+				sparql_query = sparql(self.entities, self.config_file, self.dataset, self.sparql, self.default_graph, self.entity_class)
 
 				self.properties = sparql_query.properties
 
 				self.properties.append('feedback') #add the feedback property that is not defined in the graph
 
 			else: #get everything you have in the folder
-				
+
 				path_to_graphs = 'datasets/%s/graphs' %self.dataset
 
 				onlyfiles = [f for f in listdir(path_to_graphs) if isfile(join(path_to_graphs, f))]
@@ -189,7 +189,7 @@ class entity2vec(node2vec):
 
 		parser.add_argument('--sparql', dest = 'sparql',
 		                    help='Whether downloading the graphs from a sparql endpoint')
-		parser.set_defaults(sparql=False)		
+		parser.set_defaults(sparql=False)
 
 		parser.add_argument('--entities', dest = 'entities', default = "all",
 		                    help='A specific list of entities for which the embeddings have to be computed')
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
 	args = entity2vec.parse_args()
 
-	print('Parameters:\n')	
+	print('Parameters:\n')
 
 	print('walk length = %d\n' %args.walk_length)
 
