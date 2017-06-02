@@ -19,9 +19,9 @@ from random import shuffle
 
 class entity2rec(entity2vec, entity2rel):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, config_file):
 
-		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
+		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, config_file)
 
 		entity2rel.__init__(self, True) #binary format embeddings
 
@@ -40,11 +40,10 @@ class entity2rec(entity2vec, entity2rel):
 
 		for prop in self.properties:
 
-			self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, int(self.p), int(self.q), self.walk_length,self.dimensions))
+			self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' %(self.dataset, prop, self.num_walks, int(self.p), int(self.q), self.walk_length,self.dimensions, self.iter, self.window_size))
 
 
 	def _get_items_liked_by_user(self):
-
 		self.all_train_items = []
 
 		self.items_liked_by_user_dict = collections.defaultdict(list)
@@ -131,17 +130,17 @@ class entity2rec(entity2vec, entity2rel):
 
 
 	def content_similarities(self, user, item):
-		
+
 		#all other properties
 
 		items_liked_by_user = self.items_liked_by_user_dict[user]
 
 		sims = []
-		
+
 		for past_item in items_liked_by_user:
 
 			sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
-		
+
 		if len(sims) == 0:
 			sims = 0.5*np.ones(len(self.properties) - 1)
 			return sims
@@ -169,7 +168,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		#binarization of the relevance values
 		if self.implicit == False:
-			relevance = 1 if relevance >= 4 else 0		
+			relevance = 1 if relevance >= 4 else 0
 
 		return (user, user_id, item, relevance)
 
@@ -185,7 +184,7 @@ class entity2rec(entity2vec, entity2rel):
 		file.write(' %d:%f' %(count,collab_score))
 
 		count += 1
-		
+
 		content_scores = self.content_similarities(user, item)
 
 		l = len(content_scores)
@@ -200,7 +199,7 @@ class entity2rec(entity2vec, entity2rel):
 
 				file.write(' %d:%f' %(count,content_score))
 
-				count += 1		
+				count += 1
 
 
 
@@ -224,7 +223,16 @@ class entity2rec(entity2vec, entity2rel):
 
 		train_name = ((self.training).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
+		feature_path = 'features/%s/p%d_q%d/' %(self.dataset,int(self.p), int(self.q))
+
+		try:
+			os.makedirs(feature_path)
+		except:
+			pass
+
+		feature_file = feature_path + '%s_p%d_q%d.svm' %(train_name, int(self.p), int(self.q))
+
+		with codecs.open(feature_file,'w', encoding='utf-8') as train_write:
 
 			with codecs.open(self.training,'r', encoding='utf-8') as training:
 
@@ -244,7 +252,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
+		with codecs.open(feature_file,'w', encoding='utf-8') as test_write:
 
 			for user in self.items_rated_by_user_train.keys():
 
@@ -267,7 +275,7 @@ class entity2rec(entity2vec, entity2rel):
 							rel = 1 if rel >= 4 else 0
 
 					except KeyError:
-						rel = 0 #unrated items are assumed to be negative 
+						rel = 0 #unrated items are assumed to be negative
 
 					self.write_line(user, user_id, item, rel, test_write)
 
@@ -342,7 +350,7 @@ class entity2rec(entity2vec, entity2rel):
 
 		parser.add_argument('--sparql', dest = 'sparql',
 		                    help='Whether downloading the graphs from a sparql endpoint')
-		parser.set_defaults(sparql=False)		
+		parser.set_defaults(sparql=False)
 
 		parser.add_argument('--entities', dest = 'entities', default = "all",
 		                    help='A specific list of entities for which the embeddings have to be computed')
@@ -359,7 +367,10 @@ class entity2rec(entity2vec, entity2rel):
 
 		parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
 
-    	parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+		parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+
+		parser.add_argument('--feedback_file', dest = 'feedback_file', default = False,
+		                    help='Path to a DAT file that contains all the couples user-item')
 
 		return parser.parse_args()
 
@@ -371,7 +382,7 @@ if __name__ == '__main__':
 
 	args = entity2rec.parse_args()
 
-	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class)
+	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.config_file)
 
 	rec.run(args.run_all)
 

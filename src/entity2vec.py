@@ -5,7 +5,7 @@ import random
 import node2vec
 import json
 from os.path import isfile, join
-from os import mkdir
+from os import makedirs
 from os import listdir
 import argparse
 from node2vec import node2vec
@@ -13,6 +13,7 @@ import time
 import codecs
 from SPARQLWrapper import SPARQLWrapper, JSON
 from sparql import sparql
+import shutil
 
 ####################################################################################
 ## Generates a set of property-speficic entity embeddings from a Knowledge Graph ###
@@ -20,7 +21,7 @@ from sparql import sparql
 
 class entity2vec(node2vec):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class):
+	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file):
 
 		node2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations)
 
@@ -35,6 +36,8 @@ class entity2vec(node2vec):
 		self.entities = entities
 
 		self.entity_class = entity_class
+
+		self.feedback_file = feedback_file
 
 		self._define_properties()
 
@@ -91,10 +94,14 @@ class entity2vec(node2vec):
 
 		try:
 
-			mkdir('emb/%s' %(self.dataset))
+			makedirs('emb/%s' %(self.dataset))
 
 		except:
 			pass
+
+		# copy define feedback_file, if declared
+		if self.feedback_file:
+			shutil.copy2(self.feedback_file, "datasets/%s/graphs/feedback.edgelist" %(self.dataset))
 
 		#iterate through properties
 
@@ -111,13 +118,14 @@ class entity2vec(node2vec):
 			graph = "datasets/%s/graphs/%s.edgelist" %(self.dataset, prop_short)
 
 			try:
-
-				mkdir('emb/%s/%s' %(self.dataset,prop_short))
+				makedirs('emb/%s/%s' %(self.dataset,prop_short))
 
 			except:
 				pass
 
 			emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" %(self.dataset, prop_short, n, p, q, l, d, it, win)
+
+			print('running with', graph)
 
 			super(entity2vec, self).run(graph,emb_output) #call the run function defined in parent class node2vec
 
@@ -127,7 +135,7 @@ class entity2vec(node2vec):
 
 		if self.sparql:
 
-			sparql_query = sparql(self.entities, self.properties, self.dataset, self.sparql, self.default_graph, self.entity_class)
+			sparql_query = sparql(self.entities, self.config_file, self.dataset, self.sparql, self.default_graph, self.entity_class)
 
 			sparql_query.get_property_graphs()
 
@@ -198,8 +206,10 @@ class entity2vec(node2vec):
 		parser.add_argument('--default_graph', dest = 'default_graph', default = False,
 		                    help='Default graph to query when using a Sparql endpoint')
 
-
 		parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+
+		parser.add_argument('--feedback_file', dest = 'feedback_file', default = False,
+		                    help='Path to a DAT file that contains all the couples user-item')
 
 		return parser.parse_args()
 
@@ -246,8 +256,9 @@ if __name__ == '__main__':
 
 	print('entity class = %s\n' %args.entity_class)
 
+	print('feedback file = %s\n' %args.feedback_file)
 
-	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.entity_class)
+	e2v = entity2vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.entity_class, args.feedback_file)
 
 	e2v.run()
 
