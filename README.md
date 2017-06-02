@@ -40,7 +40,7 @@ The set of properties can be defined in the configuration file `config/propertie
 
 ## Entity Recommendation
 
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling _entity2vec_ using the command line argument `--run_all`. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling _entity2rec_ using the command line argument `--run_all`. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
 
     python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat
 
@@ -50,13 +50,14 @@ The command accepts all the params of _entity2vec_ and, in addition:
 |----------------|------------------------|------------|
 |`train`         | null **(Required)**    | Path of the train set in DAT format (see below for syntax) |
 |`test`          | null **(Required)**    | Path of the test set in DAT format (see below for syntax)  |
+|`run_all`       | False                  | Whether running entity2vec to compute the embeddings       |
 
 
 The training and test set have the format:
 
     user_id item_id rating timestamp
 
-where the `user_id` should be an integer, eventually preceded by the string `user` (i.e. `13` or `user13`).
+where the `user_id` should be an integer, possibly preceded by the string `user` (i.e. `13` or `user13`).
 
 If the argument `--run_all` is provided, _entity2vec_ will be called and generate property specific embeddings and all its command line arguments can be used. Otherwise, the embeddings will be loaded from the `emb/` folder.
 
