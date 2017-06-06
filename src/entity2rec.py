@@ -21,7 +21,9 @@ class entity2rec(entity2vec, entity2rel):
 
 	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, config_file):
 
-		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, config_file)
+		self.entity2vec = entity2vec(is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, config_file)
+
+		self.__dict__.update(self.entity2vec.__dict__) # copy properties from entity2vec to entity2rec
 
 		entity2rel.__init__(self, True) #binary format embeddings
 

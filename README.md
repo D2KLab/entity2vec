@@ -50,7 +50,8 @@ The command accepts all the params of _entity2vec_ and, in addition:
 |----------------|------------------------|------------|
 |`train`         | null **(Required)**    | Path of the train set in DAT format (see below for syntax) |
 |`test`          | null **(Required)**    | Path of the test set in DAT format (see below for syntax)  |
-|`run_all`       | False                  | Whether running entity2vec to compute the embeddings       |
+|`run_all`       | false                  | If `true`, it runs _entity2vec_ to compute the embeddings before the recommendation task (in this case, it is suggested to add also the related command line arguments). Otherwise, it expects that the embeddings are in the `emb\` folder |
+|`implicit`      | false                  | If `true`, it expects that the ratings are binary values (0/1) instead of a range of scores |
 
 
 The training and test set have the format:
@@ -58,8 +59,6 @@ The training and test set have the format:
     user_id item_id rating timestamp
 
 where the `user_id` should be an integer, possibly preceded by the string `user` (i.e. `13` or `user13`).
-
-If the argument `--run_all` is provided, _entity2vec_ will be called and generate property specific embeddings and all its command line arguments can be used. Otherwise, the embeddings will be loaded from the `emb/` folder.
 
 ## Entity classification
 
