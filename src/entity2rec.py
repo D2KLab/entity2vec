@@ -21,9 +21,7 @@ class entity2rec(entity2vec, entity2rel):
 
 	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
 
-		self.entity2vec = entity2vec(is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
-
-		self.__dict__.update(self.entity2vec.__dict__) # copy properties from entity2vec to entity2rec
+		entity2vec.__init__(self,is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
 
 		entity2rel.__init__(self, True) #binary format embeddings
 
@@ -254,7 +252,9 @@ class entity2rec(entity2vec, entity2rel):
 
 		test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-		with codecs.open(feature_file,'w', encoding='utf-8') as test_write:
+		feature_file = feature_path + '%s_p%d_q%d.svm' %(test_name, int(self.p), int(self.q))
+
+		with codecs.open(feature_file, 'w', encoding='utf-8') as test_write:
 
 			for user in self.items_rated_by_user_train.keys():
 
@@ -289,7 +289,7 @@ class entity2rec(entity2vec, entity2rel):
 	def run(self, run_all):
 
 		if run_all:
-			self.entity2vec.run()
+			super(entity2rec, self).run()
 			self._get_embedding_files()
 
 		else:
