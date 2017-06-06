@@ -101,6 +101,7 @@ class entity2vec(node2vec):
 
 		# copy define feedback_file, if declared
 		if self.feedback_file:
+			print('Copying feedback file %s' %(self.feedback_file))
 			shutil.copy2(self.feedback_file, "datasets/%s/graphs/feedback.edgelist" %(self.dataset))
 
 		#iterate through properties
