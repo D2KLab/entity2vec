@@ -36,7 +36,7 @@ The set of properties can be defined in the configuration file `config/propertie
 |`sparql`        | null                   | endpoint from which property-specific graphs are obtained. If not provided, it assumes that the graphs are already stored in `datasets/your_dataset/graphs` |
 |`default_graph` | null                   | whether using a default_graph in the SPARQL endpoint |
 |`num_walks`     | 500                    | number of random walks per entity |
-|`feedback_file` | null                   | Path to a DAT file that contains all the couples user-item. If not defined, it assumes that is the file `datasets\<my_dataset>\graphs\feedback.edgelist` |
+|`feedback_file` | null                   | Path to a DAT file that contains all the couples user-item. If not defined, it assumes that is the file `datasets/<my_dataset>/graphs/feedback.edgelist` |
 
 ## Entity Recommendation
 
