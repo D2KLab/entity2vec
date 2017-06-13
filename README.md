@@ -40,6 +40,7 @@ The set of properties can be defined in the configuration file `config/propertie
 
 ## Entity Recommendation
 
+Implementation of the entity recommendation algorithm described in "entity2rec: learning user-item relatedness from Knowledge Graphs for top-N item recommendation".
 Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling _entity2rec_ using the command line argument `--run_all`. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
 
     python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat
