@@ -97,10 +97,12 @@ class sparql(object):
 
 			if '/' in prop:
 
+				# avoid creating file with a '/' in the name
 				prop_short = prop.split('/')[-1]
 
-				prop_namespace = '<'+prop+'>'
-
+				# if it is actually a URI, surround by "<>"
+				if prop.startswith("http"):
+					prop_namespace = '<'+prop+'>'
 
 			try:
 				mkdir('datasets/%s/'%(self.dataset))
