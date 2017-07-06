@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+
+datasets/
+benchmarks/
+dictionaries/
+emb/old/
+emb/
+graph/
+lib/Snap-3.0/
+results/
+rdf2vec/
+*.out
