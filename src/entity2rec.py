@@ -16,363 +16,362 @@ from random import shuffle
 ## Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph embeddings and user feedback ##
 ###############################################################################################################################################
 
-
 class entity2rec(entity2vec, entity2rel):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class):
+    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class):
 
-		entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
+        entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
 
-		entity2rel.__init__(self, True) #binary format embeddings
+        entity2rel.__init__(self, True) #binary format embeddings
 
-		self.training = training
+        self.training = training
 
-		self.test = test
+        self.test = test
 
-		self.implicit = implicit
+        self.implicit = implicit
 
-		self._get_items_liked_by_user() #defines the dictionary of items liked by each user in the training set
+        self._get_items_liked_by_user() #defines the dictionary of items liked by each user in the training set
 
-		self._get_all_items() #define all the items that can be used as candidates for the recommandations
+        self._get_all_items() #define all the items that can be used as candidates for the recommandations
 
 
-	def _get_embedding_files(self):
+    def _get_embedding_files(self):
 
-		for prop in self.properties:
+        for prop in self.properties:
+            prop_short = prop
+            if '/' in prop:
+                prop_short = prop.split('/')[-1]
 
-			self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s.emd' %(self.dataset, prop, self.num_walks, int(self.p), int(self.q), self.walk_length,self.dimensions))
+            self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
+            self.dataset, prop_short, self.num_walks, int(self.p), int(self.q), self.walk_length, self.dimensions, self.iter,
+            self.window_size))
 
 
-	def _get_items_liked_by_user(self):
+    def _get_items_liked_by_user(self):
 
-		self.all_train_items = []
+        self.all_train_items = []
 
-		self.items_liked_by_user_dict = collections.defaultdict(list)
+        self.items_liked_by_user_dict = collections.defaultdict(list)
 
-		self.items_ratings_by_user_test = {}
+        self.items_ratings_by_user_test = {}
 
-		self.items_rated_by_user_train = collections.defaultdict(list)
+        self.items_rated_by_user_train = collections.defaultdict(list)
 
-		with codecs.open(self.training,'r', encoding='utf-8') as train:
+        with codecs.open(self.training,'r', encoding='utf-8') as train:
 
-			for line in train:
+            for line in train:
 
-				line = line.split(' ')
+                line = line.split(' ')
 
-				u = line[0]
+                u = line[0]
 
-				item = line[1]
+                item = line[1]
 
-				relevance = int(line[2])
+                relevance = int(line[2])
 
-				self.items_rated_by_user_train[u].append(item)
+                self.items_rated_by_user_train[u].append(item)
 
-				self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
+                self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
 
-				if self.implicit == False and relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
+                if self.implicit == False and relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
 
-					self.items_liked_by_user_dict[u].append(item)
+                    self.items_liked_by_user_dict[u].append(item)
 
-				elif self.implicit == True and relevance == 1:
+                elif self.implicit == True and relevance == 1:
 
-					self.items_liked_by_user_dict[u].append(item)
+                    self.items_liked_by_user_dict[u].append(item)
 
-				self.all_train_items.append(item)
+                self.all_train_items.append(item)
 
-		self.all_train_items = list(set(self.all_train_items)) #remove duplicates
+        self.all_train_items = list(set(self.all_train_items)) #remove duplicates
 
 
-	def _get_all_items(self):
+    def _get_all_items(self):
 
-		self.all_items = []
+        self.all_items = []
 
-		if self.entities != "all": #if it has been provided a list of items as an external file, read from it
+        if self.entities != "all": #if it has been provided a list of items as an external file, read from it
 
-			del self.all_train_items #free memory space
+            del self.all_train_items #free memory space
 
-			with codecs.open(self.entities, 'r', encoding='utf-8') as items:
+            with codecs.open(self.entities, 'r', encoding='utf-8') as items:
 
-				for item in items:
+                for item in items:
 
-					item = item.strip('\n')
+                    item = item.strip('\n')
 
-					self.all_items.append(item)
+                    self.all_items.append(item)
 
-		else: #otherwise join the items from the train and test set
+        else: #otherwise join the items from the train and test set
 
-			with codecs.open(self.test,'r', encoding='utf-8') as test:
+            with codecs.open(self.test,'r', encoding='utf-8') as test:
 
-				test_items = []
+                test_items = []
 
-				for line in test:
+                for line in test:
 
-					line = line.split(' ')
+                    line = line.split(' ')
 
-					u = line[0]
+                    u = line[0]
 
-					item = line[1]
+                    item = line[1]
 
-					relevance = int(line[2])
+                    relevance = int(line[2])
 
-					test_items.append(item)
+                    test_items.append(item)
 
-					self.items_ratings_by_user_test[(u,item)] = relevance
+                    self.items_ratings_by_user_test[(u,item)] = relevance
 
-				self.all_items = list(set(self.all_train_items+test_items)) #merge lists and remove duplicates
+                self.all_items = list(set(self.all_train_items+test_items)) #merge lists and remove duplicates
 
-				del self.all_train_items
+                del self.all_train_items
 
 
-	def collab_similarity(self, user, item):
+    def collab_similarity(self, user, item):
 
-		#feedback embedding is always the last of the list
+        #feedback embedding is always the last of the list
 
-		return self.relatedness_score_by_position(user, item, -1)
+        return self.relatedness_score_by_position(user, item, -1)
 
 
-	def content_similarities(self, user, item):
-		
-		#all other properties
+    def content_similarities(self, user, item):
+        
+        #all other properties
 
-		items_liked_by_user = self.items_liked_by_user_dict[user]
+        items_liked_by_user = self.items_liked_by_user_dict[user]
 
-		sims = []
-		
-		for past_item in items_liked_by_user:
+        sims = []
+        
+        for past_item in items_liked_by_user:
 
-			sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
-		
-		if len(sims) == 0:
-			sims = 0.5*np.ones(len(self.properties) - 1)
-			return sims
+            sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
+        
+        if len(sims) == 0:
+            sims = 0.5*np.ones(len(self.properties) - 1)
+            return sims
 
-		return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
+        return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
 
 
-	@staticmethod
-	def parse_user_id(user):
+    @staticmethod
+    def parse_user_id(user):
 
-		return int(user.strip('user')) #29
+        return int(user.strip('user')) #29
 
 
-	def parse_users_items_rel(self,line):
+    def parse_users_items_rel(self,line):
 
-		line = line.split(' ')
+        line = line.split(' ')
 
-		user = line[0] #user29
+        user = line[0] #user29
 
-		user_id = entity2rec.parse_user_id(user) #29
+        user_id = entity2rec.parse_user_id(user) #29
 
-		item = line[1] #http://dbpedia.org/resource/The_Golden_Child
+        item = line[1] #http://dbpedia.org/resource/The_Golden_Child
 
-		relevance = int(line[2]) #5
+        relevance = int(line[2]) #5
 
-		#binarization of the relevance values
-		if self.implicit == False:
-			relevance = 1 if relevance >= 4 else 0		
+        #binarization of the relevance values
+        if self.implicit == False:
+            relevance = 1 if relevance >= 4 else 0      
 
-		return (user, user_id, item, relevance)
+        return (user, user_id, item, relevance)
 
 
-	def write_line(self,user, user_id, item, relevance, file):
+    def write_line(self,user, user_id, item, relevance, file):
 
-		file.write('%d qid:%d' %(relevance,user_id))
+        file.write('%d qid:%d' %(relevance,user_id))
 
-		count = 1
+        count = 1
 
-		collab_score = self.collab_similarity(user, item)
+        collab_score = self.collab_similarity(user, item)
 
-		file.write(' %d:%f' %(count,collab_score))
+        file.write(' %d:%f' %(count,collab_score))
 
-		count += 1
-		
-		content_scores = self.content_similarities(user, item)
+        count += 1
+        
+        content_scores = self.content_similarities(user, item)
 
-		l = len(content_scores)
+        l = len(content_scores)
 
-		for content_score in content_scores:
+        for content_score in content_scores:
 
-			if count == l + 1: #last score, end of line
+            if count == l + 1: #last score, end of line
 
-				file.write(' %d:%f # %s\n' %(count,content_score,item))
+                file.write(' %d:%f # %s\n' %(count,content_score,item))
 
-			else:
+            else:
 
-				file.write(' %d:%f' %(count,content_score))
+                file.write(' %d:%f' %(count,content_score))
 
-				count += 1		
+                count += 1      
 
+    def get_candidates(self,user):
 
+        #get candidates according to the all unrated items protocol
+        #use as candidates all the the items that are not in the training set
 
-	def get_candidates(self,user):
+        rated_items_train = self.items_rated_by_user_train[user] #both in the train and in the test
 
-		#get candidates according to the all unrated items protocol
-		#use as candidates all the the items that are not in the training set
+        candidate_items = [item for item in self.all_items if item not in rated_items_train] #all unrated items in the train
 
-		rated_items_train = self.items_rated_by_user_train[user] #both in the train and in the test
+        return candidate_items
 
-		candidate_items = [item for item in self.all_items if item not in rated_items_train] #all unrated items in the train
+    def feature_generator(self):
 
-		return candidate_items
+        #write training set
 
+        start_time = time.time()
 
-	def feature_generator(self):
+        train_name = ((self.training).split('/')[-1]).split('.')[0]
 
-		#write training set
+        with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
 
-		start_time = time.time()
+            with codecs.open(self.training,'r', encoding='utf-8') as training:
 
-		train_name = ((self.training).split('/')[-1]).split('.')[0]
+                for i, line in enumerate(training):
 
-		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),train_name, int(self.p), int(self.q)),'w', encoding='utf-8') as train_write:
+                    user, user_id, item, relevance = self.parse_users_items_rel(line)
 
-			with codecs.open(self.training,'r', encoding='utf-8') as training:
+                    print(user)
 
-				for i, line in enumerate(training):
+                    self.write_line(user, user_id, item, relevance, train_write)
 
-					user, user_id, item, relevance = self.parse_users_items_rel(line)
+        print('finished writing training')
 
-					print(user)
+        print("--- %s seconds ---" % (time.time() - start_time))
 
-					self.write_line(user, user_id, item, relevance, train_write)
+        #write test set
 
-		print('finished writing training')
+        test_name = ((self.test).split('/')[-1]).split('.')[0]
 
-		print("--- %s seconds ---" % (time.time() - start_time))
+        with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
 
-		#write test set
+            for user in self.items_rated_by_user_train.keys():
 
-		test_name = ((self.test).split('/')[-1]).split('.')[0]
+                #write some candidate items
 
-		with codecs.open('features/%s/p%d_q%d/%s_p%d_q%d.svm' %(self.dataset,int(self.p), int(self.q),test_name, int(self.p), int(self.q)),'w', encoding='utf-8') as test_write:
+                print(user)
 
-			for user in self.items_rated_by_user_train.keys():
+                user_id = entity2rec.parse_user_id(user)
 
-				#write some candidate items
+                candidate_items = self.get_candidates(user)
 
-				print(user)
+                shuffle(candidate_items) #relevant and non relevant items are shuffled
 
-				user_id = entity2rec.parse_user_id(user)
+                for item in candidate_items:
 
-				candidate_items = self.get_candidates(user)
+                    try:
+                        rel = int(self.items_ratings_by_user_test[(user,item)]) #get the relevance score if it's in the test
 
-				shuffle(candidate_items) #relevant and non relevant items are shuffled
+                        if self.implicit == False:
+                            rel = 1 if rel >= 4 else 0
 
-				for item in candidate_items:
+                    except KeyError:
+                        rel = 0 #unrated items are assumed to be negative 
 
-					try:
-						rel = int(self.items_ratings_by_user_test[(user,item)]) #get the relevance score if it's in the test
+                    self.write_line(user, user_id, item, rel, test_write)
 
-						if self.implicit == False:
-							rel = 1 if rel >= 4 else 0
+        print('finished writing test')
 
-					except KeyError:
-						rel = 0 #unrated items are assumed to be negative 
+        print("--- %s seconds ---" % (time.time() - start_time))
 
-					self.write_line(user, user_id, item, rel, test_write)
 
-		print('finished writing test')
+    def run(self, run_all):
 
-		print("--- %s seconds ---" % (time.time() - start_time))
+        if run_all:
+            super(entity2rec, self).run()
 
+        self._get_embedding_files()
+        self.feature_generator()
 
-	def run(self, run_all):
 
-		if run_all:
-			self.entity2vec.run()
-			self._get_embedding_files()
+    @staticmethod
+    def parse_args():
 
-		else:
-			self._get_embedding_files()
-			self.feature_generator()
+        '''
+        Parses the entity2vec arguments.
+        '''
 
+        parser = argparse.ArgumentParser(description="Run entity2rec.")
 
-	@staticmethod
-	def parse_args():
 
-		'''
-		Parses the entity2vec arguments.
-		'''
+        parser.add_argument('--walk_length', type=int, default=10,
+                            help='Length of walk per source. Default is 10.')
 
-		parser = argparse.ArgumentParser(description="Run entity2rec.")
+        parser.add_argument('--num_walks', type=int, default=500,
+                            help='Number of walks per source. Default is 40.')
 
+        parser.add_argument('--p', type=float, default=1,
+                            help='Return hyperparameter. Default is 1.')
 
-		parser.add_argument('--walk_length', type=int, default=10,
-		                    help='Length of walk per source. Default is 10.')
+        parser.add_argument('--q', type=float, default=1,
+                            help='Inout hyperparameter. Default is 1.')
 
-		parser.add_argument('--num_walks', type=int, default=500,
-		                    help='Number of walks per source. Default is 40.')
+        parser.add_argument('--weighted', dest='weighted', action='store_true',
+                            help='Boolean specifying (un)weighted. Default is unweighted.')
+        parser.add_argument('--unweighted', dest='unweighted', action='store_false')
+        parser.set_defaults(weighted=False)
 
-		parser.add_argument('--p', type=float, default=1,
-		                    help='Return hyperparameter. Default is 1.')
+        parser.add_argument('--directed', dest='directed', action='store_true',
+                            help='Graph is (un)directed. Default is directed.')
+        parser.set_defaults(directed=False)
 
-		parser.add_argument('--q', type=float, default=1,
-		                    help='Inout hyperparameter. Default is 1.')
+        parser.add_argument('--no_preprocessing', dest = 'preprocessing', action='store_false',
+                            help='Whether preprocess all transition probabilities or compute on the fly')
+        parser.set_defaults(preprocessing=True)
 
-		parser.add_argument('--weighted', dest='weighted', action='store_true',
-		                    help='Boolean specifying (un)weighted. Default is unweighted.')
-		parser.add_argument('--unweighted', dest='unweighted', action='store_false')
-		parser.set_defaults(weighted=False)
+        parser.add_argument('--dimensions', type=int, default=500,
+                            help='Number of dimensions. Default is 500.')
 
-		parser.add_argument('--directed', dest='directed', action='store_true',
-		                    help='Graph is (un)directed. Default is directed.')
-		parser.set_defaults(directed=False)
+        parser.add_argument('--window-size', type=int, default=10,
+                            help='Context size for optimization. Default is 10.')
 
-		parser.add_argument('--no_preprocessing', dest = 'preprocessing', action='store_false',
-		                    help='Whether preprocess all transition probabilities or compute on the fly')
-		parser.set_defaults(preprocessing=True)
+        parser.add_argument('--iter', default=5, type=int,
+                          help='Number of epochs in SGD')
 
-		parser.add_argument('--dimensions', type=int, default=500,
-		                    help='Number of dimensions. Default is 128.')
+        parser.add_argument('--workers', type=int, default=8,
+                            help='Number of parallel workers. Default is 8.')
 
-		parser.add_argument('--window-size', type=int, default=10,
-	                    	help='Context size for optimization. Default is 10.')
+        parser.add_argument('--config_file', nargs='?', default='config/properties.json',
+                            help='Path to configuration file')
 
-		parser.add_argument('--iter', default=5, type=int,
-	                      help='Number of epochs in SGD')
+        parser.add_argument('--dataset', nargs='?', default='movielens_1m',
+                            help='Dataset')
 
-		parser.add_argument('--workers', type=int, default=8,
-		                    help='Number of parallel workers. Default is 8.')
+        parser.add_argument('--sparql', dest = 'sparql',
+                            help='Whether downloading the graphs from a sparql endpoint')
+        parser.set_defaults(sparql=False)       
 
-		parser.add_argument('--config_file', nargs='?', default='config/properties.json',
-		                    help='Path to configuration file')
+        parser.add_argument('--entities', dest = 'entities', default = "all",
+                            help='A specific list of entities for which the embeddings have to be computed')
 
-		parser.add_argument('--dataset', nargs='?', default='movielens_1m',
-		                    help='Dataset')
 
-		parser.add_argument('--sparql', dest = 'sparql',
-		                    help='Whether downloading the graphs from a sparql endpoint')
-		parser.set_defaults(sparql=False)		
+        parser.add_argument('--default_graph', dest = 'default_graph', default = False,
+                            help='Default graph to query when using a Sparql endpoint')
 
-		parser.add_argument('--entities', dest = 'entities', default = "all",
-		                    help='A specific list of entities for which the embeddings have to be computed')
+        parser.add_argument('--train', dest='train', help='train', default = False)
 
+        parser.add_argument('--test', dest='test', help='test')
 
-		parser.add_argument('--default_graph', dest = 'default_graph', default = False,
-		                    help='Default graph to query when using a Sparql endpoint')
+        parser.add_argument('--run_all', dest='run_all', action = 'store_true', default = False, help='If computing also the embeddings')
 
-		parser.add_argument('--train', dest='train', help='train', default = False)
+        parser.add_argument('--implicit', dest='implicit', action = 'store_true',default = False, help='Implicit feedback with boolean values')
 
-		parser.add_argument('--test', dest='test', help='test')
+        parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
 
-		parser.add_argument('--run_all', dest='run_all', default = False, help='If computing also the embeddings')
-
-		parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
-
-    	parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
-
-		return parser.parse_args()
+        return parser.parse_args()
 
 
 if __name__ == '__main__':
 
 
-	start_time = time.time()
+    start_time = time.time()
 
-	args = entity2rec.parse_args()
+    args = entity2rec.parse_args()
 
-	rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class)
+    rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class)
 
-	rec.run(args.run_all)
+    rec.run(args.run_all)
 
-	print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- %s seconds ---" % (time.time() - start_time))
