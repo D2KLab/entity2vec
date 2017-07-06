@@ -5,8 +5,6 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 
 - **_entity2vec_**, which generates a set of entity embeddings from Knowledge Graphs corresponding to different properties. Entity2vec can work with a set of pre-downloaded dumps or download them from a SPARQL endpoint.
 
-- **_entity2rec_**, which generates a set of recommended entities combining property-specific similarity scores obtained using entity2vec embeddings.
-
 ## Requirements
 
 - Python 2.7 or above
