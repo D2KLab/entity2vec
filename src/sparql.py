@@ -97,10 +97,12 @@ class sparql(object):
 
 			if '/' in prop:
 
+				# avoid creating file with a '/' in the name
 				prop_short = prop.split('/')[-1]
 
-				prop_namespace = '<'+prop+'>'
-
+				# if it is actually a URI, surround by "<>"
+				if prop.startswith("http"):
+					prop_namespace = '<'+prop+'>'
 
 			try:
 				mkdir('datasets/%s/'%(self.dataset))
@@ -117,15 +119,15 @@ class sparql(object):
 					self.wrapper.setQuery(self.query_prop%prop_namespace)
 
 
-				for result in self.wrapper.query().convert()['results']['bindings']:
+					for result in self.wrapper.query().convert()['results']['bindings']:
 
-					subj = result['s']['value']
+						subj = result['s']['value']
 
-					obj = result['o']['value']
+						obj = result['o']['value']
 
-					print((subj, obj))
+						print((subj, obj))
 
-					prop_graph.write('%s %s\n' %(subj, obj)) 
+						prop_graph.write('%s %s\n' %(subj, obj))
 
 
 				else:
@@ -148,12 +150,12 @@ class sparql(object):
 
 								print((subj, obj))
 
-								prop_graph.write('%s %s\n' %(subj, obj)) 
+								prop_graph.write('%s %s\n' %(subj, obj))
 
 						f.seek(0) #reinitialize iterator
 
 
-		return 
+		return
 
 
 
@@ -163,11 +165,11 @@ class sparql(object):
 
 		sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 
-		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> %d 
+		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> %d
 		   }""" %int(wiki_id))
 
 		sparql.setReturnFormat(JSON)
-		
+
 		try:
 			uri = sparql.query().convert()['results']['bindings'][0]['s']['value']
 
@@ -181,7 +183,7 @@ if __name__ == '__main__':
 
 	parser = optparse.OptionParser()
 	parser.add_option('-e','--entities', dest = 'entity_file', help = 'entity file name', default = 'all')
-	parser.add_option('-c','--config_file', default='config/properties.json', help='Path to configuration file')    
+	parser.add_option('-c','--config_file', default='config/properties.json', help='Path to configuration file')
 	parser.add_option('-k','--dataset', dest = 'dataset', help = 'dataset')
 	parser.add_option('-m','--endpoint', dest = 'endpoint', help = 'sparql endpoint')
 	parser.add_option('-d', '--default_graph', dest = 'default_graph', help = 'default graph', default = False)

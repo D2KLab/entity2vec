@@ -1,11 +1,11 @@
 # entity2vec
 entity2vec computes vector representations of Knowledge Graph entities that preserve semantic similarities and are suitable for classification tasks. It generates a set of property-specific entity embeddings by running node2vec on property specific subgraphs, i.e. K(p) = (s,p,o) where p is a given property. The repository includes:
 
-- A reimplementation of node2vec, which introduces the possibility of avoiding the preprocessing of the transition probabilities, which has the effect of reducing memory effort, but slowing down the computation
+- A reimplementation of _node2vec_, which introduces the possibility of avoiding the preprocessing of the transition probabilities, which has the effect of reducing memory effort, but slowing down the computation
 
-- entity2vec, which generates a set of entity embeddings from Knowledge Graphs corresponding to different properties. Entity2vec can work with a set of pre-dowloaded dumps or download them from a SPARQL endpoint. 
+- **_entity2vec_**, which generates a set of entity embeddings from Knowledge Graphs corresponding to different properties. Entity2vec can work with a set of pre-downloaded dumps or download them from a SPARQL endpoint.
 
-- entity2rec, which generates a set of recommended entities combining property-specific similarity scores obtained using entity2vec embeddings. 
+- **_entity2rec_**, which generates a set of recommended entities combining property-specific similarity scores obtained using entity2vec embeddings.
 
 ## Requirements
 
@@ -16,52 +16,71 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 - pandas
 - SPARQL Wrapper
 
+If you are using `pip`:
+
+
+        pip install gensim networkx pandas SPARQLWrapper
+
 ## Property-specific entity embeddings
 
-The set of properties can be defined in the configuration file config/properties.json, otherwise the software will run on each file that is located in datasets/your_dataset/graphs or if a SPARQL endpoint is provided, it will download all the graphs for all properties in datasets/your_dataset/graphs.
+The set of properties can be defined in the configuration file `config/properties.json`, otherwise the software will run on each file that is located in `datasets/your_dataset/graphs` or if a SPARQL endpoint is provided, it will download all the graphs for all properties in `datasets/your_dataset/graphs`.
 
-```
-  python src/entity2vec.py --dataset dataset --config_file config_file --entities entities --sparql sparql --default_graph default_graph
-```
-dataset: mandatory, name of the dataset (defaultmovielens_1m, will be used to create folders, retrieve properties from config file)
 
-config_file: mandatory, by default config/config.properties.
+        python src/entity2vec.py --dataset dataset --config_file config_file --entities entities --sparql sparql --default_graph default_graph
 
-entities: optional, a list of entities for which the embeddings have to be computed. By default, it will use them all.
+|option          | default                |description|
+|----------------|------------------------|-----------|
+|`dataset`       | null **(Required)**    | name of the dataset. It will be used to create folders and retrieve properties from config file|
+|`config_file`   | config/properties.json | path of the configuration file
+|`entities`      | all                    | a list of entities for which the embeddings have to be computed. By default, it will use them all.|
+|`sparql`        | null                   | endpoint from which property-specific graphs are obtained. If not provided, it assumes that the graphs are already stored in `datasets/your_dataset/graphs` |
+|`default_graph` | null                   | whether using a default_graph in the SPARQL endpoint |
+|`num_walks`     | 500                    | number of random walks per entity |
+|`feedback_file` | null                   | Path to a DAT file that contains all the couples user-item. If not defined, it assumes that is the file `datasets/<my_dataset>/graphs/feedback.edgelist` |
 
-sparql: optional, endpoint from which property-specific graphs are obtained. If not provided, it assumes that the graphs are already stored in datasets/your_dataset/graphs
+## entity2rec
 
-default_graph: optional, whether using a default_graph in the SPARQL endpoint
+Implementation of the entity recommendation algorithm described in "entity2rec: learning user-item relatedness from Knowledge Graphs for top-N item recommendation".
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling _entity2rec_ using the command line argument `--run_all`. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
 
-## Entity Recommendation
+    python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat
 
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (movielens_1m/graphs/feedback.edgelist) and Linked Open Data information (movielens_1m/graphs/dbpedia_property.edgelist) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling entity2vec using the command line argument --run_all. It adopts by default the AllItems candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommandation.
+The command accepts all the params of _entity2vec_ and, in addition:
 
-```
-python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat 
-```
+|option          | default                |description |
+|----------------|------------------------|------------|
+|`train`         | null **(Required)**    | Path of the train set in DAT format (see below for syntax) |
+|`test`          | null **(Required)**    | Path of the test set in DAT format (see below for syntax)  |
+|`run_all`       | false                  | If `true`, it runs _entity2vec_ to compute the embeddings before the recommendation task (in this case, it is suggested to add also the related command line arguments). Otherwise, it expects that the embeddings are in the `emb\` folder |
+|`implicit`      | false                  | If `true`, it expects that the ratings are binary values (0/1) instead of a range of scores |
 
-where it is assumed that the training and test set have the format:
 
-```
-user_id item_id rating timestamp
+The training and test set have the format:
 
-```
-if the argument --run_all is provided, entity2vec will be called and generate property specific embeddings and all its command line arguments can be used. Otherwise, the embeddings will be loaded from the emb/ folder.
+    user_id item_id rating timestamp
+
+where the `user_id` should be an integer, possibly preceded by the string `user` (i.e. `13` or `user13`).
+
+As an output, it will generate a set of property-specific relatedness scores in the SVM format inside the folder features/my_dataset:
+
+1 qid:1 1:0.186378 2:0.000000 3:0.329318 4:0.420169 5:0.000000 6:0.407551 7:0.000000 8:0.355113 9:0.198874 10:0.146273 11:0.354844 # http://dbpedia.org/resource/The_Secret_Garden_(1993_film)
+
+This file can be used as input of https://sourceforge.net/p/lemur/wiki/RankLib/ to learn the global relatedness model.
+
+
 
 ## Entity classification
 
 Generate unique vector representation for an entity, without considering the role of semantic properties, to use in classification tasks.
 
-0) Create empty directory called emb
+0. Create empty directory called emb
 
-1) Run node2vec on the whole graph to create a single global embedding of the entity
-```
-  python src/node2vec.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.emd  --p 1 --q 4
-```
-2) Obtain scores, e.g.:
-```
-  cd ml
+1. Run node2vec on the whole graph to create a single global embedding of the entity
 
-  python rdf_predict.py --dataset aifb --emb ../emb/aifb_p1_q4.emd --dimension 500
-```
+        python src/node2vec.py --input datasets/aifb/aifb.edgelist --output emb/aifb_p1_q4.emd  --p 1 --q 4
+
+2. Obtain scores, e.g.:
+
+        cd ml
+
+        python rdf_predict.py --dataset aifb --emb ../emb/aifb_p1_q4.emd --dimension 500
