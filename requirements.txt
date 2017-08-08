@@ -1,0 +1,4 @@
+gensim
+networkx
+pandas
+SPARQLWrapper

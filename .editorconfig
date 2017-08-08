@@ -1,14 +1,20 @@
-# EditorConfig is awesome: http://EditorConfig.org
-
-# top-most EditorConfig file
+;
+; Global Editor Config for Adaptive Labbers
+;
+; This is an ini style configuration. See http://editorconfig.org/ for more information on this file.
+;
+; Top level editor config.
 root = true
-
-# Unix-style newlines with a newline ending every file
+; Always use Unix style new lines with new line ending on every file and trim whitespace
 [*]
 end_of_line = lf
 insert_final_newline = true
-
+trim_trailing_whitespace = true
+; Python: PEP8 defines 4 spaces for indentation
 [*.py]
-charset = utf-8
-indent_style = tab
+indent_style = space
+indent_size = 4
+; Salt state files, YAML format, 2 spaces
+[*.sls, *.yaml, *.yml]
+indent_style = space
 indent_size = 2

@@ -17,7 +17,7 @@ entity2vec computes vector representations of Knowledge Graph entities that pres
 If you are using `pip`:
 
 
-        pip install gensim networkx pandas SPARQLWrapper
+        pip install -r requirements.txt
 
 ## Property-specific entity embeddings
 
@@ -25,6 +25,16 @@ The set of properties can be defined in the configuration file `config/propertie
 
 
         python src/entity2vec.py --dataset dataset --config_file config_file --entities entities --sparql sparql --default_graph default_graph
+
+Alternatively, _e2v_ can be loaded as a module and used like:
+
+        from entity2vec.entity2vec import Entity2Vec
+
+        e2v = Entity2Vec(False, False, False, 1, 1, 10, 5,
+                     128, 10, 8, 5, 'path/to/properties.json', False,
+                     'dataset_name', 'all', False, False,
+                     'path/to/feedback.edgelist')
+
 
 |option          | default                |description|
 |----------------|------------------------|-----------|
