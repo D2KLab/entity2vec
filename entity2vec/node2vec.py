@@ -129,7 +129,7 @@ class Node2Vec(object):
 
         return walk
 
-    def learn_embeddings(self, output):
+    def learn_embeddings(self, output, output_format='binary'):
         """
         Learn embeddings by optimizing the Skipgram objective using SGD.
         """
@@ -141,9 +141,11 @@ class Node2Vec(object):
 
         print("defined model using w2v")
 
-        model.wv.save_word2vec_format(output, binary=True)
+        is_binary = output_format != 'text'
+        model.wv.save_word2vec_format(output, is_binary)
 
-        print("saved model in word2vec binary format")
+        actual_format = 'text' if output_format == 'text' else 'binary'
+        print("saved model in word2vec %s format" % actual_format)
 
         return
 
@@ -285,6 +287,9 @@ class Node2Vec(object):
         parser.add_argument('--output', nargs='?', default='walks.txt.gz',
                             help='emb file name')
 
+        parser.add_argument('--output_format', nargs='?', default='binary',
+                            help='Format of the emb file. It accepts "binary" (default) or "text"')
+
         parser.add_argument('--walk_length', type=int, default=10,
                             help='Length of walk per source. Default is 10.')
 
@@ -323,7 +328,7 @@ class Node2Vec(object):
 
         return parser.parse_args()
 
-    def run(self, input_graph, output):
+    def run(self, input_graph, output, output_format='binary'):
 
         self.read_graph(input_graph)
 
@@ -333,7 +338,7 @@ class Node2Vec(object):
             self.preprocess_transition_probs()
             print('preprocessed')
 
-        self.learn_embeddings(output)
+        self.learn_embeddings(output, output_format)
 
 
 if __name__ == '__main__':
@@ -346,6 +351,8 @@ if __name__ == '__main__':
     print('input = %s\n' % args.input)
 
     print('output = %s\n' % args.output)
+
+    print('output type = %s\n' % args.output_format)
 
     print('walk length = %d\n' % args.walk_length)
 
@@ -372,6 +379,6 @@ if __name__ == '__main__':
     node2vec_graph = Node2Vec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length,
                               args.num_walks, args.dimensions, args.window_size, args.workers, args.iter)
 
-    node2vec_graph.run(args.input, args.output)
+    node2vec_graph.run(args.input, args.output, args.output_format)
 
     print("--- %s seconds ---" % (time.time() - start_time))
