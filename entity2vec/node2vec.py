@@ -142,7 +142,7 @@ class Node2Vec(object):
         print("defined model using w2v")
 
         is_binary = output_format != 'text'
-        model.wv.save_word2vec_format(output, is_binary)
+        model.wv.save_word2vec_format(output, binary=is_binary)
 
         actual_format = 'text' if output_format == 'text' else 'binary'
         print("saved model in word2vec %s format" % actual_format)
